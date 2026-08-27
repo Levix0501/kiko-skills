@@ -1,0 +1,59 @@
+#!/usr/bin/env bash
+# Create one dated spec's implementation artifact directories.
+# Usage: prepare-implement-dir KIKO_ROOT SPEC_FILE
+set -euo pipefail
+
+if [ "$#" -ne 2 ]; then
+  echo "usage: prepare-implement-dir KIKO_ROOT SPEC_FILE" >&2
+  exit 2
+fi
+
+kiko_root=$1
+spec=$2
+
+[ -d "$kiko_root" ] || { echo "no such KIKO_ROOT directory: $kiko_root" >&2; exit 2; }
+[ ! -L "$kiko_root" ] || { echo "refusing symlink KIKO_ROOT: $kiko_root" >&2; exit 2; }
+kiko_root=$(CDPATH= cd -- "$kiko_root" && pwd -P)
+
+[ -f "$spec" ] || { echo "no such spec file: $spec" >&2; exit 2; }
+[ ! -L "$spec" ] || { echo "refusing symlink spec: $spec" >&2; exit 2; }
+spec_dir=$(CDPATH= cd -- "$(dirname -- "$spec")" && pwd -P)
+spec_name=$(basename -- "$spec")
+
+[ "$spec_dir" = "$kiko_root/specs" ] || {
+  echo "spec must be directly under $kiko_root/specs: $spec" >&2
+  exit 2
+}
+
+case "$spec_name" in
+  [0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9]-?*.md) ;;
+  *)
+    echo "spec filename must match YYYY-MM-DD-<topic>.md; rename it before running /implement: $spec_name" >&2
+    exit 2
+    ;;
+esac
+
+base="$kiko_root/.implement"
+[ -d "$base" ] && [ ! -L "$base" ] || {
+  echo "expected existing implementation root: $base" >&2
+  exit 2
+}
+
+slug=${spec_name%.md}
+dir="$base/$slug"
+if [ -e "$dir" ] || [ -L "$dir" ]; then
+  [ -d "$dir" ] && [ ! -L "$dir" ] || { echo "expected implementation directory: $dir" >&2; exit 2; }
+else
+  mkdir "$dir"
+fi
+
+for child in scopes dispatch results decisions; do
+  path="$dir/$child"
+  if [ -e "$path" ] || [ -L "$path" ]; then
+    [ -d "$path" ] && [ ! -L "$path" ] || { echo "expected directory: $path" >&2; exit 2; }
+  else
+    mkdir "$path"
+  fi
+done
+
+cd "$dir" && pwd -P

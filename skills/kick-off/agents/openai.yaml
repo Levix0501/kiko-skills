@@ -1,0 +1,5 @@
+interface:
+  display_name: "kick-off"
+  short_description: "A relentless interview that turns an unclear request into a shared, actionable understanding"
+policy:
+  allow_implicit_invocation: false

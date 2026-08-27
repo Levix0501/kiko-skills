@@ -1,0 +1,121 @@
+#!/usr/bin/env bash
+# Initialize kiko's project-local artifacts at an explicit workspace root.
+set -euo pipefail
+
+if [ "$#" -ne 1 ]; then
+  echo "usage: init-kiko WORKSPACE_ROOT" >&2
+  exit 2
+fi
+
+workspace_root=$1
+[ -d "$workspace_root" ] || { echo "kiko: no such directory: $workspace_root" >&2; exit 2; }
+workspace_root=$(CDPATH= cd -- "$workspace_root" && pwd -P)
+
+if ! git -C "$workspace_root" rev-parse --is-inside-work-tree 2>/dev/null \
+  | grep -qxF true; then
+  echo "kiko: warning: $workspace_root is not inside a Git worktree; Git-backed durability is unavailable." >&2
+fi
+
+kiko_dir="$workspace_root/.kiko"
+
+check_dir() {
+  path=$1
+  [ ! -L "$path" ] || { echo "kiko: refusing symlink: $path" >&2; exit 2; }
+  [ ! -e "$path" ] || [ -d "$path" ] || {
+    echo "kiko: expected a directory: $path" >&2
+    exit 2
+  }
+}
+
+check_file() {
+  path=$1
+  [ ! -L "$path" ] || { echo "kiko: refusing symlink: $path" >&2; exit 2; }
+  [ ! -e "$path" ] || [ -f "$path" ] || {
+    echo "kiko: expected a regular file: $path" >&2
+    exit 2
+  }
+}
+
+check_dir "$kiko_dir"
+check_dir "$kiko_dir/specs"
+check_dir "$kiko_dir/.implement"
+check_file "$kiko_dir/TODO.md"
+check_file "$kiko_dir/.gitignore"
+
+mkdir -p "$kiko_dir/specs" "$kiko_dir/.implement"
+
+create_file_if_missing() {
+  path=$1
+  initial_content=$2
+  if [ ! -e "$path" ] && [ ! -L "$path" ]; then
+    (set -o noclobber; printf '%s' "$initial_content" >"$path") 2>/dev/null || true
+  fi
+  [ ! -L "$path" ] && [ -f "$path" ] || {
+    echo "kiko: could not create a regular file: $path" >&2
+    exit 2
+  }
+}
+
+create_file_if_missing "$kiko_dir/TODO.md" $'# TODO\n'
+create_file_if_missing "$kiko_dir/.gitignore" ''
+
+tmp_file=''
+cleanup_ignore_tmp() {
+  [ -z "$tmp_file" ] || rm -f -- "$tmp_file" || true
+}
+trap cleanup_ignore_tmp EXIT
+trap 'exit 130' HUP INT TERM
+
+normalize_ignore_rules() {
+  ignore_file="$kiko_dir/.gitignore"
+  marker='# kiko: managed local state; keep this block last'
+  preimage=$(file_sha256 "$ignore_file") || exit 2
+  tmp_file=$(mktemp "$kiko_dir/.gitignore.tmp.XXXXXX") || exit 2
+
+  if ! LC_ALL=C awk -v marker="$marker" '
+    $0 == marker || $0 == "/TODO.md" || $0 == "/.implement/" || $0 == "/.gitignore" { next }
+    { print }
+  ' "$ignore_file" >"$tmp_file"; then
+    rm -f -- "$tmp_file"
+    exit 2
+  fi
+  printf '%s\n%s\n%s\n%s\n' \
+    "$marker" '/TODO.md' '/.implement/' '/.gitignore' >>"$tmp_file"
+
+  if ! cmp -s "$tmp_file" "$ignore_file"; then
+    if file_mode=$(stat -f '%Lp' "$ignore_file" 2>/dev/null); then
+      chmod "$file_mode" "$tmp_file"
+    elif file_mode=$(stat -c '%a' "$ignore_file" 2>/dev/null); then
+      chmod "$file_mode" "$tmp_file"
+    fi
+    [ ! -L "$ignore_file" ] && [ -f "$ignore_file" ] || {
+      rm -f -- "$tmp_file"
+      echo "kiko: .gitignore changed type during initialization" >&2
+      exit 2
+    }
+    [ "$(file_sha256 "$ignore_file")" = "$preimage" ] || {
+      rm -f -- "$tmp_file"
+      echo "kiko: .gitignore changed during initialization; retry after reviewing it" >&2
+      exit 2
+    }
+    mv -f -- "$tmp_file" "$ignore_file"
+  fi
+  rm -f -- "$tmp_file"
+  tmp_file=''
+}
+
+file_sha256() {
+  if command -v shasum >/dev/null 2>&1; then
+    shasum -a 256 "$1" | awk '{print $1}'
+  elif command -v sha256sum >/dev/null 2>&1; then
+    sha256sum "$1" | awk '{print $1}'
+  else
+    echo "kiko: shasum or sha256sum is required" >&2
+    return 2
+  fi
+}
+
+normalize_ignore_rules
+trap - EXIT HUP INT TERM
+
+printf '%s\n' "$kiko_dir"
