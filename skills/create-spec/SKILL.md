@@ -3,14 +3,58 @@ name: create-spec
 description: Turn a settled outcome into a build-ready spec a fresh context can implement and verify. Use when the user asks to create a spec.
 ---
 
-## Create
+`create-spec` turns the settled input into a build-ready spec — the delivery
+contract a fresh context can implement and verify.
 
-The spec records a settled outcome: while material decisions remain open, recommend `/kick-off` rather than deciding them yourself.
+## 1. Locate the target
 
-1. Run the bundled `scripts/check-kiko` with the opened project root's absolute path as its sole argument, not the current shell directory, and treat the returned path as `KIKO_ROOT`. Exit 3 means the layout is missing or incomplete: ask the user to run `/setup-kiko` at the project root, then retry. For any other nonzero exit, report the error and stop. Never initialize or repair `.kiko` yourself.
-2. Set the new spec path to `$KIKO_ROOT/specs/YYYY-MM-DD-<topic>.md`, dated today. If that path already exists, choose a different `<topic>`.
-3. Write the spec for the settled outcome to the new path using [assets/spec-template.md](assets/spec-template.md), checking workspace facts only where needed to keep the requirements and acceptance accurate.
-4. Run [references/self-review.md](references/self-review.md) and fix issues.
-5. Give the user the path, necessary choices made while writing, and any high-risk contracts to review closely. Apply requested changes to the same file, self-review the affected scope, and repeat until explicit approval.
+Run `scripts/check-kiko` with the opened project root's absolute path as its
+only argument, and use the returned path as `KIKO_ROOT`.
 
-After explicit approval, make no semantic change. If the spec is inside a Git worktree, commit only the spec and report the commit SHA. Otherwise warn the user that the spec is local-only. Recommend starting implementation with `/implement <actual-spec-path>` in a new window or after `/compact`, so the build starts without the accumulated conversation.
+- Exit 3: ask the user to run `/setup-kiko` at the project root, then retry.
+- Any other nonzero exit: report the error and stop.
+
+Do not initialize or repair `.kiko`. Set the spec path to
+`$KIKO_ROOT/specs/YYYY-MM-DD-<topic>.md` using today's date. If the path
+exists, choose another topic instead of overwriting it.
+
+## 2. Classify the input
+
+Apply [the spec rules](references/spec-rules.md) to each candidate by
+semantic role, regardless of its original heading.
+
+Run each empirical premise through the evidence gate in the spec rules before
+using it.
+
+## 3. Draft and preflight
+
+Assemble the complete draft per [the template](assets/spec-template.md)
+without writing the target file.
+
+Run [the self-review](references/self-review.md) and fix every failure. Write
+the complete draft to the target path only after this preflight passes.
+
+## 4. Review with the user
+
+Present the written file as the exact review target, list every D or state that
+there are none, and ask the user to confirm or revise the document.
+
+Apply requested changes to the same file. Reclassify the affected content,
+rerun any newly relevant evidence gate, and repeat the self-review for affected
+items, terms, and references before requesting confirmation again.
+
+Do not put `Draft`, `Approved`, or another approval-status field in the spec or
+an auxiliary file.
+
+## 5. Commit the confirmed version
+
+Do not commit until the user explicitly confirms the current file. Any later
+semantic change requires another confirmation.
+
+If the spec is in a Git working tree, commit only that file and report the
+commit SHA. Otherwise, warn the user that the file carries no confirmation
+marker: without a commit, nothing distinguishes it from an abandoned draft.
+
+Recommend starting `/implement <actual-spec-path>` in a new window or after
+`/compact`, so the build does not spend context and tokens on the accumulated
+conversation.

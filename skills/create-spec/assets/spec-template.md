@@ -1,49 +1,50 @@
 # Spec template
 
+The title and optional version metadata are non-authoritative. The
+authoritative body has exactly the four sections below, in this order.
+
 ```markdown
-# <Topic>
+# <Spec title>
 
-## Objective & Scope
+## 1. Normative Requirements
 
-<the coherent outcome, why it matters, its owned boundary, and outcome-level
-exclusions>
+### R1 — <name>
 
-## Requirements
+<A required result, externally visible behavior, quality or scope boundary,
+or prohibited external effect whose meaning is independent of the internal
+solution.>
 
-### R1 — <short name>
+## 2. Binding Design Decisions
 
-<one binding, observable obligation>
+### D1 (R1) — <name>
 
-### R2 — …
+<An explicitly authorized task-specific internal choice or exclusion that
+implementers may not replace.>
 
-## Context & Constraints
+## 3. Observable Acceptance
 
-<optional: non-obvious facts, affected systems, dependencies, and constraints
-needed to interpret the relevant R IDs>
+### A1 (R1) — <name>
 
-## Design & Contracts
+<An observable scenario, result, and pass condition derived entirely from the
+referenced R and D items.>
 
-<optional: settled architecture, boundaries, data flow, and external contracts
-that elaborate the relevant R IDs>
+### A2 (R1, D1) — <name>
 
-## Compatibility, Migration & Failure Behavior
+<…>
 
-<optional: compatibility, transition, edge-case, and failure details for the
-relevant R IDs>
+## 4. Out of Scope
 
-## Acceptance Criteria
+### O1 — <name>
 
-- A1 (R1): <observable verification; include the exact command and working
-  directory where one exists>
-- A2 (R1, R2): …
+<An unpromised result or capability whose explicit exclusion prevents a
+reasonable scope misunderstanding.>
 ```
 
-Keep the sections in the template's order. Include each optional middle
-section only when it has load-bearing content.
+Use `None` as the entire content of section 2 or 4 when that section has no
+items. Do not invent D or O items to fill it.
 
-Outcome-level exclusions belong in `Objective & Scope`. Prohibitions within
-the outcome are numbered requirements. Every in-scope obligation has one
-stable `R<n>`; optional sections only elaborate those IDs. Every `R<n>` is
-covered by an observable `A<n>`. Omit implementation plans, progress, review
-records, and rejected alternatives unless an alternative defines the outcome
-boundary or a numbered obligation.
+Use stable `R<n>`, `D<n>`, `A<n>`, and `O<n>` IDs; numbering implies no
+implementation order. Each D heading cites the R items it constrains. Each A
+heading cites at least one R and every D it observes. Every R and D has at
+least one A. D authorization is verified during self-review, not recorded in
+the spec.
