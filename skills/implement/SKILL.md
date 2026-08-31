@@ -102,18 +102,21 @@ When the subagent returns, continue to Step 7.
 
 An `ERROR:` return is a protocol failure: return to the dispatching step and dispatch again. One exception: an ERROR reporting a dirty or moved repository is the user's decision — show it and offer the choice: retry after they restore the repository (return to the dispatching step), or end the run (Step 18).
 
-Otherwise validate the Output mechanically. For every role: it sits at the manifest's `Output` path and is complete per the role's contract. For a write role (implementer, fixer): its reported repositories match reality — each on the manifest's `Branch` at its reported Head, Base an ancestor of Head, tree clean. For a read role (reviewer, re-reviewer): the reviewed repositories are unchanged — each still on its target branch and Head with a clean tree — its finding IDs run consecutively from the manifest's `First finding ID`, and on a final phase the coverage lists every current Requirement and Acceptance exactly once in spec order. A missing or invalid Output is a protocol failure as well: return to the dispatching step and dispatch again. A second consecutive protocol failure at the same dispatch step, and each one after it, is the user's decision — show what failed and offer the choice: retry (return to the dispatching step), or end the run (Step 18).
+Otherwise validate the Output mechanically. For every role: it sits at the manifest's `Output` path and is complete per the role's contract. For every result reporting repository modifications — an implementation or fix result, or a review+fix result (a review result with a FIX section): the reported repositories match reality — each on the manifest's `Branch` at its reported Head, Base an ancestor of Head, tree clean; a FIX repository block for a `REVIEW_TARGET` repository additionally requires `Base` equal to that target's `Head`. For a review, review+fix, or re-review result: every target repository it does not report modified is unchanged — each still on its target branch and Head with a clean tree — its finding IDs run consecutively from the manifest's `First finding ID`, and on a final phase the coverage lists every current Requirement and Acceptance exactly once in spec order. A review result carries a FIX section exactly when it meets the reviewer contract's fix-stage trigger; any mismatch is invalid. A missing or invalid Output is a protocol failure as well: return to the dispatching step and dispatch again. A second consecutive protocol failure at the same dispatch step, and each one after it, is the user's decision — show what failed and offer the choice: retry (return to the dispatching step), or end the run (Step 18).
 
-Adopt the result — append the line matching the dispatched role to `$PROGRESS_FILE`, reusing the dispatch's `<name>`:
+Adopt the result — append the line matching the result's type to `$PROGRESS_FILE`, reusing the dispatch's `<name>`:
 
 ```text
 Phase P<n>: implementation result — results/<name>.md
 Phase P<n>: review result — results/<name>.md
+Phase P<n>: review+fix result — results/<name>.md
 Phase P<n>: fix result — results/<name>.md
 Phase P<n>: re-review result — results/<name>.md
 ```
 
-Then continue by result type: an implementation result or a fix result → Step 8; a review result → Step 10; a re-review result → Step 13.
+An adopted result that reports repository modifications is evidence; a review+fix result reports them through its FIX repository blocks.
+
+Then continue by result type: an implementation result or a fix result → Step 8; a review or review+fix result → Step 10; a re-review result → Step 13.
 
 ### Step 8: Route the write-role result
 
@@ -127,6 +130,7 @@ Write `$IMPLEMENT_DIR/dispatch/<name>.md` — a manifest, per [2.4 Manifests](#2
 ```text
 Role: reviewer
 Mode: intermediate|final
+Branch: kiko/$SPEC_SLUG
 Spec: $SPEC_FILE
 Scope: <current-scope-absolute-path>
 Output: $IMPLEMENT_DIR/results/<name>.md
@@ -143,7 +147,7 @@ Head: <full-sha>
 END_REVIEW_TARGET
 ```
 
-`Mode` is `final` for a final phase, otherwise `intermediate`. `Evidence sources` list the current phase's adopted evidence, DONE and BLOCKED alike. `First finding ID` is one greater than the highest finding ID in any adopted review or re-review result, or `F1`. Repeat `REVIEW_TARGET` per repository any adopted evidence reports: `Head` is that repository's Head in the latest adopted evidence reporting it; `Base` is its Head in the last adopted evidence from before the current phase — or, where this phase touches it first, its first reporting evidence's `Base`, the work branch's starting commit.
+`Mode` is `final` for a final phase, otherwise `intermediate`. `Evidence sources` list the current phase's adopted evidence, DONE and BLOCKED alike. `First finding ID` is one greater than the highest finding ID in any adopted review, review+fix, or re-review result, or `F1`. Repeat `REVIEW_TARGET` per repository any adopted evidence reports: `Head` is that repository's Head in the latest adopted evidence reporting it; `Base` is its Head in the last adopted evidence from before the current phase — or, where this phase touches it first, its first reporting evidence's `Base`, the work branch's starting commit.
 
 Append this record to `$PROGRESS_FILE`:
 
@@ -158,9 +162,10 @@ When the subagent returns, continue to Step 7.
 ### Step 10: Route the review result
 
 - `clean` — the phase's obligations are proven: for an intermediate phase, continue to Step 5 to plan the next phase; for a final phase, the run is Complete: continue to Step 17.
-- `issues` with any Critical or Important finding, or on a final phase — the findings open a fix round: continue to Step 11.
-- `issues` with only Minor findings on an intermediate phase — fixing defers: the phase completes and the findings carry as open findings; continue to Step 5 to plan the next phase.
-- A reported spec issue or external blocker outranks status routing — handle only the highest-priority reported category, in this order: spec issue (Step 14), then external blocker (Step 15); never route the result's lower-priority conclusions directly.
+- No FIX section, `issues` with only Minor findings on an intermediate phase — fixing defers: the phase completes and the findings carry as open findings; continue to Step 5 to plan the next phase.
+- No FIX section, a reported spec issue or external blocker — it outranks status routing: handle only the highest-priority reported category, in this order: spec issue (Step 14), then external blocker (Step 15); never route the result's lower-priority conclusions directly.
+- A FIX section with `Fix: DONE` — continue to Step 12.
+- A FIX section with `Fix: BLOCKED` — handle only the highest-priority category on its FIX lines, in this order: spec issue (Step 14), then external blocker (Step 15), then code blocker (Step 16); never route the result's lower-priority conclusions directly.
 
 ### Step 11: Dispatch the fixer
 
@@ -219,7 +224,7 @@ Head: <full-sha>
 END_REREVIEW_TARGET
 ```
 
-`Mode` is `final` for a final phase, otherwise `intermediate`. `Evidence sources` list the current phase's adopted evidence, DONE and BLOCKED alike. `Finding sources` are the same wave the round's fixer received; `Base` and `First finding ID` follow Step 9's rules. Repeat `REREVIEW_TARGET` per repository any adopted evidence reports: `Reviewed head` is that repository's Head in the triggering result's manifest, or equal to `Base` where this round touches it first; `Head` is its Head in the latest adopted evidence reporting it. `Base..Reviewed head` is already reviewed; `Reviewed head..Head` is the fix delta.
+`Mode` is `final` for a final phase, otherwise `intermediate`. `Evidence sources` list the current phase's adopted evidence, DONE and BLOCKED alike. `Finding sources` are the round's wave, per Step 11's definition; `Base` and `First finding ID` follow Step 9's rules. Repeat `REREVIEW_TARGET` per repository any adopted evidence reports: `Reviewed head` is that repository's Head in the triggering result's manifest, or equal to `Base` where this round touches it first; `Head` is its Head in the latest adopted evidence reporting it. `Base..Reviewed head` is already reviewed; `Reviewed head..Head` is the fix delta.
 
 Append this record to `$PROGRESS_FILE`:
 
@@ -240,18 +245,18 @@ When the subagent returns, continue to Step 7.
 
 ### Step 14: Handle a spec issue
 
-Any role may report a contradiction in the current spec, a false premise in it, or an acceptance rule that cannot determine correctness. Pause product implementation; the reporting result is the issue source. Read and follow [references/spec-amendment.md](references/spec-amendment.md): it ends either by dispatching a successor through the reporting role's dispatch step, or by adopting an amendment and continuing to Step 5.
+Any role may report a contradiction in the current spec, a false premise in it, or an acceptance rule that cannot determine correctness. Pause product implementation; the reporting result is the issue source. Read and follow [references/spec-amendment.md](references/spec-amendment.md): it ends either by dispatching a successor through the reporting result's [successor dispatch step](#successor-dispatch-step), or by adopting an amendment and continuing to Step 5.
 
 ### Step 15: Handle an external blocker
 
 The reporting result names something outside the repositories that blocks progress and the user action that clears it. Show the user both and ask whether they will act now.
 
-- Cleared — return to the reporting role's dispatch step and dispatch a successor with [the successor fields](#successor-fields): `Prior result` names the reporting result; a write role whose remaining work is only external verification takes `Action: evidence-recovery` with `Recovery evidence` naming the same result.
+- Cleared — dispatch a successor through the reporting result's [successor dispatch step](#successor-dispatch-step) with [the successor fields](#successor-fields): `Prior result` names the reporting result; a write-role successor whose remaining work is only external verification takes `Action: evidence-recovery` with `Recovery evidence` naming the same result.
 - Not now — if open work the blocker does not reach remains, continue to Step 5: write a replacement scope for the still-active phase from that work; the blocked items stay open for a later phase. Otherwise continue to Step 18.
 
 ### Step 16: Handle a code blocker
 
-The reporting write role hit a technical obstacle it could not clear; its result records the partial state and a concrete next step. Return to that role's dispatch step and dispatch one successor with [the successor fields](#successor-fields): `Prior result` names the blocked result. A fresh attempt holding the predecessor's recorded state and next step either clears the obstacle or confirms it.
+The reporting role hit a technical obstacle it could not clear; its result records the partial state and a concrete next step. Dispatch one successor through the reporting result's [successor dispatch step](#successor-dispatch-step) with [the successor fields](#successor-fields): `Prior result` names the blocked result. A fresh attempt holding the predecessor's recorded state and next step either clears the obstacle or confirms it.
 
 If the successor's result reports the same obstacle, it is confirmed: show the user the obstacle and the reported next step, and offer the choice — if open work the obstacle does not reach remains, park it and continue to Step 5 (a replacement scope for the still-active phase; the blocked items stay open), or end the run (Step 18). A different code blocker is a fresh report where the successor advanced any Head: handle it from the top of this step; with no Head advanced, it is confirmed as well.
 
@@ -297,6 +302,7 @@ Phase P<n>: implement — dispatch/<name>.md
 Phase P<n>: implementation result — results/<name>.md
 Phase P<n>: review — dispatch/<name>.md
 Phase P<n>: review result — results/<name>.md
+Phase P<n>: review+fix result — results/<name>.md
 Phase P<n>: fix — dispatch/<name>.md
 Phase P<n>: fix result — results/<name>.md
 Phase P<n>: re-review — dispatch/<name>.md
@@ -308,7 +314,7 @@ Spec amendment — decisions/<name>.md
 `<name>` is the artifact file's random basename. These letters appear here and throughout the skill:
 
 - `P<n>` — phase number; increments when planning the next phase after the current one completes.
-- `F<n>` — finding ID, unique across the run; increments with each new finding a review or re-review defines. A finding's severity is fixed by its defining line.
+- `F<n>` — finding ID, unique across the run; increments with each new finding a review, review+fix, or re-review result defines. A finding's severity is fixed by its defining line.
 
 ### 2.3 Scope
 
@@ -355,6 +361,10 @@ Recovery evidence: <absolute-evidence-path>
 ```
 
 Any manifest may append these. `Prior result` names the result this successor continues — after a code blocker, an external blocker, or a rejected spec issue; only the last adds the fixed `Prior disposition` line. A write role carries `Recovery evidence` exactly when `Action` is `evidence-recovery`.
+
+#### Successor dispatch step
+
+A successor is dispatched through the step matching the reported result's type: an implementation result through Step 6, a review result through Step 9, a fix or review+fix result through Step 11, and a re-review result through Step 12.
 
 ### 2.5 Dispatch prompt
 

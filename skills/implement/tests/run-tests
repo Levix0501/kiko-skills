@@ -131,6 +131,12 @@ t06_role_output_interfaces_are_complete() {
     contains "$contract" 'addressed|invalid|not_addressed | <' || return 1
     contains "$contract" '<every current Requirement and Acceptance ID or exact name, in spec order>' || return 1
   done
+
+  contains "$REFERENCES/reviewer.md" 'FIX:' || return 1
+  contains "$REFERENCES/reviewer.md" 'END_FIX' || return 1
+  contains "$REFERENCES/reviewer.md" 'Fix: DONE|BLOCKED' || return 1
+  contains "$REFERENCES/reviewer.md" 'END_REPOSITORY' || return 1
+  contains "$REFERENCES/reviewer.md" 'Created from:' || return 1
 }
 
 t07_cross_role_protocol_is_consistent() {
@@ -145,18 +151,21 @@ t07_cross_role_protocol_is_consistent() {
   contains "$SKILL" 'reporting a dirty or moved repository' || return 1
   contains "$SKILL" 'A second consecutive protocol failure at the same dispatch step' || return 1
   contains "$SKILL" 'with no Head advanced, it is confirmed as well' || return 1
-  [ "$(grep -cF "never route the result's lower-priority conclusions directly" "$SKILL")" -eq 3 ] || return 1
+  [ "$(grep -cF "never route the result's lower-priority conclusions directly" "$SKILL")" -eq 4 ] || return 1
+  contains "$SKILL" 'Phase P<n>: review+fix result — results/<name>.md' || return 1
 
   branch_rule="creating it from the repository's current branch on first touch"
   contains "$SKILL" "$branch_rule" || return 1
   contains "$REFERENCES/implementer.md" "$branch_rule" || return 1
   contains "$REFERENCES/fixer.md" "$branch_rule" || return 1
+  contains "$REFERENCES/reviewer.md" "$branch_rule" || return 1
   contains "$SKILL" 'Created from' || return 1
   contains "$REFERENCES/implementer.md" 'Created from:' || return 1
   contains "$REFERENCES/fixer.md" 'Created from:' || return 1
   dirty_scope='after that, a dirty tree you cannot clear is a `Blocker`'
   contains "$REFERENCES/implementer.md" "$dirty_scope" || return 1
   contains "$REFERENCES/fixer.md" "$dirty_scope" || return 1
+  contains "$REFERENCES/reviewer.md" "$dirty_scope" || return 1
   contains "$SKILL" 'or the branch the user names where no adopted evidence records it' || return 1
 
   write_successor='after a code blocker, an external blocker, or a rejected spec issue'
@@ -204,7 +213,8 @@ t09_removed_protocol_does_not_return() {
     not_contains "$path" 'recovery.md' || return 1
   done
   not_contains "$SKILL" 'there is no automatic Minor-only round 2.' || return 1
-  not_contains "$SKILL" 'Files absent from progress are orphans'
+  not_contains "$SKILL" 'Files absent from progress are orphans' || return 1
+  not_contains "$REFERENCES/reviewer.md" 'Concern'
 }
 
 t10_readme_quickstart_and_setup_scripts() {
@@ -234,6 +244,8 @@ t11_dispatch_manifests_supply_contract_preflights() {
     contains "$contract" '`Prior result`' || return 1
     contains "$contract" 'Prior disposition: spec-issue-rejected' || return 1
   done
+
+  contains "$REFERENCES/reviewer.md" '`Mode: intermediate|final`, `Branch`' || return 1
 
   contains "$SKILL" 'Action: execute' || return 1
   contains "$SKILL" 'Branch: kiko/$SPEC_SLUG' || return 1

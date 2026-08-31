@@ -6,7 +6,7 @@ A role reported a spec issue; the reporting result is the issue source. Product 
 
 Check the issue source's claim against the current spec and the repositories' actual state.
 
-If the claim does not hold, the spec stands: return to the reporting role's dispatch step and dispatch a successor with [the successor fields](../SKILL.md#successor-fields) — `Prior result` names the issue result, plus `Prior disposition: spec-issue-rejected`. Never route the old result's other categories. This ends the procedure.
+If the claim does not hold, the spec stands: dispatch a successor through the reporting result's [successor dispatch step](../SKILL.md#successor-dispatch-step) with [the successor fields](../SKILL.md#successor-fields) — `Prior result` names the issue result, plus `Prior disposition: spec-issue-rejected`. Never route the old result's other categories. This ends the procedure.
 
 ## Decide
 
