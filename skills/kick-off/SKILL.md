@@ -30,13 +30,11 @@ The interview is done when the frontier is empty: every branch of the design tre
 
 ## Summary
 
-When the frontier is empty, present a concise summary covering:
+When the frontier is empty, present a concise summary of what was settled:
 
-- the objective
-- what is in and out of scope
-- the requirements and decisions that affect implementation
-- the acceptance criteria
-- any relevant constraints, edge cases, or failure behavior
+- the outcome and its boundaries
+- the requirements and decisions the work must honor
+- the facts relied on and the risks accepted
 
 ## Next action
 
