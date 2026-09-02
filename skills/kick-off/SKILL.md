@@ -16,17 +16,15 @@ After the user chooses, run the bundled `scripts/check-kiko` with the opened pro
 
 ## Interview
 
-Interview the user relentlessly until you reach a shared understanding. Map this as a design tree: every decision branches into the decisions that hang off it.
+Interview the user until every decision is settled. Model the work as a design tree: a decision's prerequisites are the upstream decisions and environment facts its options depend on, and its answer opens the decisions below it.
 
-Work the tree one question at a time. The frontier is every decision whose prerequisites are already settled: the questions you can ask now without guessing at answers you haven't heard yet.
+The frontier is every unsettled decision whose prerequisites are all settled. Two frontier decisions never depend on each other, so a dependency chain settles one link per round.
 
-Choose one question from the frontier and ask it with AskUserQuestion. Put your recommended option first and explain its main reason and cost. Then wait for the user's response before asking another question.
+Ask the user only for decisions and for facts only they can provide. Every other fact is a prerequisite you settle yourself from the environment; while a lookup is running, its dependents stay out of the frontier.
 
-Each answer reshapes the tree: settled decisions push the frontier outward and unblock questions that depended on them. Recompute the frontier and ask the next question. A question whose answer depends on an unsettled decision is not yet in the frontier.
+Each round is one call of the harness's structured question tool, covering as much of the frontier as its per-call limit allows, starting with the questions that unblock the most. Without such a tool, ask in the reply with numbered options. In each question, put the recommended option first with its main reason and cost. Wait for the answers, update the tree, recompute the frontier, and ask the next round.
 
-Facts discoverable from the environment are your job to find, not the user's. Ask the user for decisions and facts only they can provide. When a frontier question needs a fact from the environment, look it up instead of asking the user. A running exploration is an unsettled prerequisite, so questions downstream of it wait; ask another question from the frontier when one is available.
-
-The interview is done when the frontier is empty: every branch of the design tree has been visited and nothing remains silently assumed. Do not act on the result until the user confirms you have reached a shared understanding.
+The interview ends when the frontier is empty: every decision is settled and nothing is left silently assumed. Do not act on the result until the user confirms the summary.
 
 ## Summary
 
