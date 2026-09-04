@@ -1,10 +1,10 @@
 # Finding gate and risk acceptance
 
-Read this reference when a re-review leaves `issues` with a Critical or Important finding, or on a final phase; the choice is the user's.
+Read this reference when Step 13 routes a re-review wave to the user: the wave is model-level and the round it judges was model-level too, or it holds a finding marked `not_addressed`; the choice is the user's.
 
-A finding is `F<n> | critical|important|minor | <self-contained finding>`. `contract-blocking:` is a finding-text prefix, not a severity. It means a current Requirement, Acceptance, Landing, or necessary Verify cannot be established; it must be Important or Critical and cannot be risk-accepted.
+A finding is `F<n> | critical|important|minor | breaks I<k>|uncovered | <self-contained finding>`. `contract-blocking:` is a finding-text prefix, not a severity. It means a current Requirement, Acceptance, Landing, or necessary Verify cannot be established; it must be Important or Critical and cannot be risk-accepted.
 
-The open wave is every finding the re-review defines or marks `not_addressed`. Show it complete — source, severity, full finding, contract-blocking state — and offer only `Fix again`, `Accept risk`, and `Incomplete`:
+The open wave is every finding the re-review defines or marks `not_addressed`. Show it complete — source, severity, attribution, full finding, contract-blocking state, and the current Notes line of every invariant it names — and offer only `Fix again`, `Accept risk`, and `Incomplete`:
 
 - `Fix again` opens the next round at Step 11.
 - Offer `Accept risk` only when the wave has no contract-blocking finding. It covers the complete wave unless the user names a split between accepted findings and findings to fix.

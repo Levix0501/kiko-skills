@@ -38,7 +38,10 @@ On success, derive:
 SPEC_NAME=$(basename "$SPEC_FILE")
 SPEC_SLUG=${SPEC_NAME%.md}
 SPEC_POINTER=".kiko/specs/$SPEC_NAME"
+NOTES_FILE="$KIKO_ROOT/notes/$SPEC_NAME"
 ```
+
+- `$NOTES_FILE` — the spec's notes file, per [references/notes.md](references/notes.md).
 
 Then check every repository under `$PROJECT_ROOT` for uncommitted content: if any tree is not clean, show the user what you found and offer the choice — continue after they clean it, or end the run (Step 18).
 
@@ -83,6 +86,7 @@ Mode: intermediate|final
 Branch: kiko/$SPEC_SLUG
 Spec: $SPEC_FILE
 Scope: <current-scope-absolute-path>
+Notes: $NOTES_FILE
 Output: $IMPLEMENT_DIR/results/<name>.md
 ```
 
@@ -102,7 +106,7 @@ When the subagent returns, continue to Step 7.
 
 An `ERROR:` return is a protocol failure: return to the dispatching step and dispatch again. One exception: an ERROR reporting a dirty or moved repository is the user's decision — show it and offer the choice: retry after they restore the repository (return to the dispatching step), or end the run (Step 18).
 
-Otherwise validate the Output mechanically. For every role: it sits at the manifest's `Output` path and is complete per the role's contract. For every result reporting repository modifications — an implementation or fix result, or a review+fix result (a review result with a FIX section): the reported repositories match reality — each on the manifest's `Branch` at its reported Head, Base an ancestor of Head, tree clean; a FIX repository block for a `REVIEW_TARGET` repository additionally requires `Base` equal to that target's `Head`. For a review, review+fix, or re-review result: every target repository it does not report modified is unchanged — each still on its target branch and Head with a clean tree — its finding IDs run consecutively from the manifest's `First finding ID`, and on a final phase the coverage lists every current Requirement and Acceptance exactly once in spec order. A review result carries a FIX section exactly when it meets the reviewer contract's fix-stage trigger; any mismatch is invalid. A missing or invalid Output is a protocol failure as well: return to the dispatching step and dispatch again. A second consecutive protocol failure at the same dispatch step, and each one after it, is the user's decision — show what failed and offer the choice: retry (return to the dispatching step), or end the run (Step 18).
+Otherwise validate the Output mechanically. For every role: it sits at the manifest's `Output` path and is complete per the role's contract. For every result reporting repository modifications — an implementation or fix result, or a review+fix result (a review result with a FIX section): the reported repositories match reality — each on the manifest's `Branch` at its reported Head, Base an ancestor of Head, tree clean; a FIX repository block for a `REVIEW_TARGET` repository additionally requires `Base` equal to that target's `Head`. For a review, review+fix, or re-review result: every target repository it does not report modified is unchanged — each still on its target branch and Head with a clean tree — its finding IDs run consecutively from the manifest's `First finding ID`, every finding carries an attribution per [2.6 Attribution and level](#26-attribution-and-level), and on a final phase the coverage lists every current Requirement and Acceptance exactly once in spec order. A review result carries a FIX section exactly when it meets the reviewer contract's fix-stage trigger; any mismatch is invalid. A missing or invalid Output is a protocol failure as well: return to the dispatching step and dispatch again. A second consecutive protocol failure at the same dispatch step, and each one after it, is the user's decision — show what failed and offer the choice: retry (return to the dispatching step), or end the run (Step 18).
 
 Adopt the result — append the line matching the result's type to `$PROGRESS_FILE`, reusing the dispatch's `<name>`:
 
@@ -133,6 +137,7 @@ Mode: intermediate|final
 Branch: kiko/$SPEC_SLUG
 Spec: $SPEC_FILE
 Scope: <current-scope-absolute-path>
+Notes: $NOTES_FILE
 Output: $IMPLEMENT_DIR/results/<name>.md
 
 Evidence sources:
@@ -175,9 +180,11 @@ Write `$IMPLEMENT_DIR/dispatch/<name>.md` — a manifest, per [2.4 Manifests](#2
 Role: fixer
 Action: execute
 Mode: intermediate|final
+Level: code|model
 Branch: kiko/$SPEC_SLUG
 Spec: $SPEC_FILE
 Scope: <current-scope-absolute-path>
+Notes: $NOTES_FILE
 Output: $IMPLEMENT_DIR/results/<name>.md
 
 Evidence sources:
@@ -186,7 +193,7 @@ Finding sources:
 - <defining-result-path>#F<n>
 ```
 
-`Mode` is `final` for a final phase, otherwise `intermediate`. `Evidence sources` list the current phase's adopted evidence, DONE and BLOCKED alike. `Finding sources` are the round's wave: every finding the triggering result defines or marks `not_addressed`, minus findings covered by a risk acceptance.
+`Mode` is `final` for a final phase, otherwise `intermediate`. `Level` is the wave's level per [2.6 Attribution and level](#26-attribution-and-level). `Evidence sources` list the current phase's adopted evidence, DONE and BLOCKED alike. `Finding sources` are the round's wave: every finding the triggering result defines or marks `not_addressed`, minus findings covered by a risk acceptance.
 
 Append this record to `$PROGRESS_FILE`:
 
@@ -207,6 +214,7 @@ Role: re-reviewer
 Mode: intermediate|final
 Spec: $SPEC_FILE
 Scope: <current-scope-absolute-path>
+Notes: $NOTES_FILE
 Output: $IMPLEMENT_DIR/results/<name>.md
 
 Evidence sources:
@@ -239,13 +247,13 @@ When the subagent returns, continue to Step 7.
 ### Step 13: Route the re-review result
 
 - `clean` — the fix round resolved its wave: for an intermediate phase, continue to Step 5 to plan the next phase; for a final phase, the run is Complete: continue to Step 17.
-- `issues` with any Critical or Important finding, or on a final phase — put the choice to the user. Read and follow [references/finding-gate.md](references/finding-gate.md): it ends by opening the next fix round at Step 11, following this step's `clean` route after a full risk acceptance, routing a spec issue through Step 14, or ending the run at Step 18.
 - `issues` with only residual or new Minor findings on an intermediate phase — fixing defers: the phase completes and the findings carry as open findings; continue to Step 5 to plan the next phase.
+- `issues` otherwise — the wave is every finding the re-review defines or marks `not_addressed`. If the wave is model-level per [2.6 Attribution and level](#26-attribution-and-level) and the round it judges was model-level too — its fixer manifest carried `Level: model`, or it was a review+fix whose findings included `uncovered` — or the wave holds a finding the re-review marks `not_addressed`, put the choice to the user: read and follow [references/finding-gate.md](references/finding-gate.md); it ends by opening the next fix round at Step 11, following this step's `clean` route after a full risk acceptance, routing a spec issue through Step 14, or ending the run at Step 18. Otherwise open the next fix round at Step 11.
 - A reported spec issue or external blocker outranks status routing — handle only the highest-priority reported category, in this order: spec issue (Step 14), then external blocker (Step 15); never route the result's lower-priority conclusions directly.
 
 ### Step 14: Handle a spec issue
 
-Any role may report a contradiction in the current spec, a false premise in it, or an acceptance rule that cannot determine correctness. Pause product implementation; the reporting result is the issue source. Read and follow [references/spec-amendment.md](references/spec-amendment.md): it ends either by dispatching a successor through the reporting result's [successor dispatch step](#successor-dispatch-step), or by adopting an amendment and continuing to Step 5.
+Any role may report a contradiction in the current spec, a false premise in it or in the notes it relies on, an acceptance rule that cannot determine correctness, or a state the landing must handle on which the spec is silent. Pause product implementation; the reporting result is the issue source. Read and follow [references/spec-amendment.md](references/spec-amendment.md): it ends either by dispatching a successor through the reporting result's [successor dispatch step](#successor-dispatch-step), or by adopting an amendment and continuing to Step 5.
 
 ### Step 15: Handle an external blocker
 
@@ -264,7 +272,7 @@ If the successor's result reports the same obstacle, it is confirmed: show the u
 
 Ask the user how to land the work: in every repository the run touched, merge `kiko/$SPEC_SLUG` into the branch it was created from — its first reporting evidence's `Created from`, or the branch the user names where no adopted evidence records it — and delete it, or keep the branch as is. Do as they choose.
 
-Tidy `$KIKO_ROOT/TODO.md`: delete the tasks this run completed.
+Tidy `$KIKO_ROOT/TODO.md`: delete the tasks this run completed, and add one task line per Concern in adopted DONE evidence that names a decision the user has not made.
 
 Report Complete to the user: only the key outcomes, brief and to the point. The run ends here.
 
@@ -380,3 +388,14 @@ Execute the manifest:
 Write the result to the manifest's Output path.
 Return only `RESULT: <path>`, or `ERROR: <reason>` if the manifest cannot be safely executed or a complete result cannot be written.
 ```
+
+### 2.6 Attribution and level
+
+Every finding names the invariant it concerns:
+
+- `breaks I<k>` — the recorded invariant is right and the code fails to hold it;
+- `uncovered` — no recorded invariant covers the failing state, including an invariant the supplied wave already broke and the fix held as recorded.
+
+A wave is model-level when any finding in it is `uncovered`, otherwise code-level. A code-level wave is fixed in the code. A model-level wave is fixed by first appending the revised or new invariant to Notes, then making the code hold it.
+
+A false recorded premise, and a state the landing must handle on which the spec is silent, are spec issues (Step 14), not findings.

@@ -25,3 +25,5 @@ giving each input to a fresh `create-spec` context and checking the result.
 | A user change is written but the current file is unconfirmed | Do not commit |
 | D or O is empty | Write `None` rather than inventing content |
 | A new-domain input has an existing semantic role | Apply the same R/D/A/O tests |
+| An empirical premise passes the evidence gate | Keep it out of the spec; record it in the notes file with source and bearing |
+| A fact is omitted as non-contract content | Record it in the notes file |

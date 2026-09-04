@@ -33,7 +33,8 @@ The draft is ready only when every statement below is true:
 8. **Terms:** every ambiguous contract term is defined at first use and keeps
    one meaning. A defines only observation-specific, set-preserving terms.
 9. **Premises:** every empirical premise that influenced the contract or its
-   readiness passed the evidence gate within the scope in which it was used.
+   readiness passed the evidence gate within the scope in which it was used,
+   and is recorded in the notes file with its source and the R/D it bears on.
    Facts and evidence are absent from the spec.
 10. **Omission safety:** the spec contains only contract semantics. Material
     ambiguity was resolved rather than silently omitted.

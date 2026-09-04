@@ -9,6 +9,8 @@ RULES="$HERE/../references/spec-rules.md"
 REVIEW="$HERE/../references/self-review.md"
 CASES="$HERE/semantic-cases.md"
 CHECK_KIKO="$HERE/../scripts/check-kiko"
+NOTES="$HERE/../references/notes.md"
+IMPLEMENT_NOTES="$HERE/../../implement/references/notes.md"
 
 PASS=0
 FAIL=0
@@ -24,13 +26,15 @@ t01_resource_layout() {
     [ -f "$TEMPLATE" ] &&
     [ -f "$RULES" ] &&
     [ -f "$REVIEW" ] &&
+    [ -f "$NOTES" ] &&
     [ -f "$CASES" ]
 }
 
 t02_skill_links_runtime_resources() {
   contains "$SKILL" '](references/spec-rules.md)' &&
     contains "$SKILL" '](assets/spec-template.md)' &&
-    contains "$SKILL" '](references/self-review.md)'
+    contains "$SKILL" '](references/self-review.md)' &&
+    contains "$SKILL" '](references/notes.md)'
 }
 
 t03_template_has_exact_authoritative_sections() {
@@ -97,6 +101,20 @@ t09_shell_is_valid() {
     bash -n "$0"
 }
 
+t10_notes_reference_is_shared() {
+  cmp -s "$NOTES" "$IMPLEMENT_NOTES" &&
+    contains "$NOTES" '- K<n> [verified: <source>|user|assumed] <statement> — bears on: <R/D IDs, or ->' &&
+    contains "$NOTES" 'breaks when: <conditions>; evidence:' &&
+    contains "$SKILL" '$KIKO_ROOT/notes/<same basename as the spec>' &&
+    contains "$SKILL" 'without writing either file'
+}
+
+t11_rules_route_facts_to_notes() {
+  contains "$RULES" 'recorded in the notes file' &&
+    contains "$REVIEW" 'recorded in the notes file' &&
+    not_contains "$RULES" 'create a project-facts layer'
+}
+
 run_test() {
   name=$1
   if (set -e; "$name"); then
@@ -115,7 +133,9 @@ for test_name in \
   t06_rules_have_one_canonical_structure \
   t07_self_review_is_complete_and_contiguous \
   t08_semantic_fixture_is_nonempty_and_well_formed \
-  t09_shell_is_valid; do
+  t09_shell_is_valid \
+  t10_notes_reference_is_shared \
+  t11_rules_route_facts_to_notes; do
   run_test "$test_name"
 done
 

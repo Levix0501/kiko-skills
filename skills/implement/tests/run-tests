@@ -45,8 +45,9 @@ t01_resource_layout() {
   [ -x "$CHECK_KIKO" ] || return 1
   [ -x "$PREPARE_DIR" ] || return 1
   [ "$(find "$SCRIPTS" -maxdepth 1 -type f | wc -l | tr -d ' ')" -eq 2 ] || return 1
-  [ "$(find "$REFERENCES" -maxdepth 1 -type f -name '*.md' | wc -l | tr -d ' ')" -eq 6 ] || return 1
+  [ "$(find "$REFERENCES" -maxdepth 1 -type f -name '*.md' | wc -l | tr -d ' ')" -eq 7 ] || return 1
   [ -f "$REFERENCES/finding-gate.md" ] || return 1
+  [ -f "$REFERENCES/notes.md" ] || return 1
   [ -f "$REFERENCES/spec-amendment.md" ]
 }
 
@@ -58,6 +59,8 @@ t02_check_kiko_is_shared_and_builds_are_optional() {
   new_repo "$root"
   kiko=$($SETUP_KIKO "$root") || return 1
   [ "$kiko" = "$root/.kiko" ] || return 1
+  [ -d "$root/.kiko/notes" ] || return 1
+  contains "$root/.kiko/.gitignore" '/notes/' || return 1
   [ ! -e "$root/.kiko/builds" ] || return 1
   [ -z "$(git -C "$root" status --porcelain=v1 -uall)" ] || return 1
   [ "$($CHECK_KIKO "$root")" = "$root/.kiko" ] || return 1
@@ -75,9 +78,15 @@ t03_check_kiko_exit_codes() {
   run_rc 3 "$CHECK_KIKO" "$missing" || return 1
 
   incomplete="$TEST_TMP/incomplete-layout"
-  mkdir -p "$incomplete/.kiko/specs" "$incomplete/.kiko/.implement"
+  mkdir -p "$incomplete/.kiko/specs" "$incomplete/.kiko/notes" "$incomplete/.kiko/.implement"
   printf '# TODO\n' >"$incomplete/.kiko/TODO.md"
   run_rc 3 "$CHECK_KIKO" "$incomplete" || return 1
+
+  no_notes="$TEST_TMP/no-notes-layout"
+  mkdir -p "$no_notes/.kiko/specs" "$no_notes/.kiko/.implement"
+  printf '# TODO\n' >"$no_notes/.kiko/TODO.md"
+  : >"$no_notes/.kiko/.gitignore"
+  run_rc 3 "$CHECK_KIKO" "$no_notes" || return 1
 
   wrong="$TEST_TMP/wrong-layout"
   mkdir -p "$wrong"
@@ -99,7 +108,18 @@ t04_prepare_dir_uses_complete_dated_slug() {
     [ -d "$expected/$child" ] || return 1
   done
   [ ! -e "$expected/progress.md" ] || return 1
-  [ "$($PREPARE_DIR "$root/.kiko" "$spec")" = "$expected" ]
+  notes="$root/.kiko/notes/2026-08-26-payment-webhook.md"
+  [ -f "$notes" ] || return 1
+  [ "$(head -n 1 "$notes")" = '# Notes — 2026-08-26-payment-webhook.md' ] || return 1
+  printf -- '- K1 [user] appended\n' >>"$notes"
+  before=$(cat "$notes")
+  [ "$($PREPARE_DIR "$root/.kiko" "$spec")" = "$expected" ] || return 1
+  [ "$(cat "$notes")" = "$before" ] || return 1
+
+  dir_spec="$root/.kiko/specs/2026-08-26-dir-notes.md"
+  printf '# Spec\n' >"$dir_spec"
+  mkdir "$root/.kiko/notes/2026-08-26-dir-notes.md"
+  run_rc 2 "$PREPARE_DIR" "$root/.kiko" "$dir_spec"
 }
 
 t05_prepare_dir_rejects_ambiguous_specs() {
@@ -129,6 +149,7 @@ t06_role_output_interfaces_are_complete() {
     contains "$contract" 'Status: clean|issues' || return 1
     contains "$contract" 'Result-complete: yes' || return 1
     contains "$contract" 'addressed|invalid|not_addressed | <' || return 1
+    contains "$contract" 'breaks I<k>|uncovered | <self-contained finding>' || return 1
     contains "$contract" '<every current Requirement and Acceptance ID or exact name, in spec order>' || return 1
   done
 
@@ -140,10 +161,11 @@ t06_role_output_interfaces_are_complete() {
 }
 
 t07_cross_role_protocol_is_consistent() {
-  spec_issue='a false codebase/API/platform premise in it, or an acceptance rule that cannot determine correctness'
+  spec_issue='a state the landing must handle on which the Spec is silent'
   for role in implementer reviewer fixer re-reviewer; do
     contract="$REFERENCES/$role.md"
     contains "$contract" "$spec_issue" || return 1
+    contains "$contract" '[notes.md](notes.md)' || return 1
     contains "$contract" 'do not create Output' || return 1
     contains "$contract" 'ERROR: dirty repository: <path>' || return 1
     contains "$contract" 'ERROR: moved repository: <path>' || return 1
@@ -153,6 +175,9 @@ t07_cross_role_protocol_is_consistent() {
   contains "$SKILL" 'with no Head advanced, it is confirmed as well' || return 1
   [ "$(grep -cF "never route the result's lower-priority conclusions directly" "$SKILL")" -eq 4 ] || return 1
   contains "$SKILL" 'Phase P<n>: review+fix result — results/<name>.md' || return 1
+  [ "$(grep -cF 'Notes: $NOTES_FILE' "$SKILL")" -eq 4 ] || return 1
+  contains "$SKILL" 'Level: code|model' || return 1
+  contains "$REFERENCES/fixer.md" '`Level: code|model`' || return 1
 
   branch_rule="creating it from the repository's current branch on first touch"
   contains "$SKILL" "$branch_rule" || return 1
@@ -193,7 +218,10 @@ t08_conditional_references_are_linked_and_complete() {
   not_contains "$SKILL" 'references/recovery.md' || return 1
 
   contains "$REFERENCES/finding-gate.md" '`Fix again`, `Accept risk`, and `Incomplete`' || return 1
-  contains "$REFERENCES/finding-gate.md" 'a Critical or Important finding, or on a final phase' || return 1
+  contains "$REFERENCES/finding-gate.md" 'the round it judges was model-level too' || return 1
+  contains "$REFERENCES/finding-gate.md" 'or it holds a finding marked' || return 1
+  contains "$SKILL" 'or the wave holds a finding the re-review marks' || return 1
+  contains "$SKILL" '#26-attribution-and-level' || return 1
   contains "$REFERENCES/finding-gate.md" 'Phase P<n>: risk acceptance — decisions/<name>.md' || return 1
   contains "$REFERENCES/spec-amendment.md" 'Decided by: controller|user' || return 1
   contains "$REFERENCES/spec-amendment.md" '(../SKILL.md#successor-fields)' || return 1
@@ -240,7 +268,7 @@ t11_dispatch_manifests_supply_contract_preflights() {
   for role in implementer reviewer fixer re-reviewer; do
     contract="$REFERENCES/$role.md"
     contains "$contract" '`Mode: intermediate|final`' || return 1
-    contains "$contract" 'absolute Spec, Scope and Output paths' || return 1
+    contains "$contract" 'absolute Spec, Scope, Notes and Output paths' || return 1
     contains "$contract" '`Prior result`' || return 1
     contains "$contract" 'Prior disposition: spec-issue-rejected' || return 1
   done
@@ -277,6 +305,11 @@ t12_skill_supporting_paths_exist() {
   done
 }
 
+t13_notes_reference_is_shared() {
+  cmp -s "$REFERENCES/notes.md" "$HERE/../../create-spec/references/notes.md" || return 1
+  contains "$SKILL" 'NOTES_FILE="$KIKO_ROOT/notes/$SPEC_NAME"'
+}
+
 TESTS='t01_resource_layout
 t02_check_kiko_is_shared_and_builds_are_optional
 t03_check_kiko_exit_codes
@@ -288,7 +321,8 @@ t08_conditional_references_are_linked_and_complete
 t09_removed_protocol_does_not_return
 t10_readme_quickstart_and_setup_scripts
 t11_dispatch_manifests_supply_contract_preflights
-t12_skill_supporting_paths_exist'
+t12_skill_supporting_paths_exist
+t13_notes_reference_is_shared'
 
 for test_name in $TESTS; do
   if (set -e; "$test_name"); then

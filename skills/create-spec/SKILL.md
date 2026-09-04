@@ -28,11 +28,16 @@ using it.
 
 ## 3. Draft and preflight
 
-Assemble the complete draft per [the template](assets/spec-template.md)
-without writing the target file.
+Assemble the complete draft per [the template](assets/spec-template.md) and
+the notes content per [the notes format](references/notes.md) — every
+empirical premise the evidence gate admitted, with its evidence source and the
+R/D it bears on, and every fact the settled input supplied or that was omitted
+from the spec as non-contract content — without writing either file.
 
 Run [the self-review](references/self-review.md) and fix every failure. Write
-the complete draft to the target path only after this preflight passes.
+the complete draft to the target path and the notes content to
+`$KIKO_ROOT/notes/<same basename as the spec>` only after this preflight
+passes.
 
 ## 4. Review with the user
 
@@ -40,8 +45,9 @@ Present the written file as the exact review target, list every D or state that
 there are none, and ask the user to confirm or revise the document.
 
 Apply requested changes to the same file. Reclassify the affected content,
-rerun any newly relevant evidence gate, and repeat the self-review for affected
-items, terms, and references before requesting confirmation again.
+rerun any newly relevant evidence gate, append what it admits and any changed
+fact to the notes file, and repeat the self-review for affected items, terms,
+and references before requesting confirmation again.
 
 Do not put `Draft`, `Approved`, or another approval-status field in the spec or
 an auxiliary file.

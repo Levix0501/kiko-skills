@@ -101,7 +101,7 @@ Later uses must preserve the same meaning.
 Omit content whose role is to describe current state, advise an implementation,
 or prescribe a replaceable execution procedure rather than define the delivery
 contract. This includes project facts, plans, investigation records, progress,
-and proof procedures.
+and proof procedures. Project facts go to the notes file, not the spec.
 
 An empirical fact stays outside the spec even when it passes the evidence gate.
 If non-contractual status is unclear and omission could change user intent,
@@ -128,8 +128,8 @@ premise affect the spec. If so, use it only when the evidence:
 - supports no broader conclusion than the one used.
 
 The evidence or a verifiable summary must be available during the current
-self-review. It does not enter the spec, require durable storage, or create a
-project-facts layer.
+self-review. It does not enter the spec; the premise, its evidence source, and
+the R/D it bears on are recorded in the notes file.
 
 If a premise cannot be established:
 

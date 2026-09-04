@@ -38,6 +38,7 @@ require() {
 
 require dir "$candidate/specs"
 require dir "$candidate/.implement"
+require dir "$candidate/notes"
 require file "$candidate/TODO.md"
 require file "$candidate/.gitignore"
 

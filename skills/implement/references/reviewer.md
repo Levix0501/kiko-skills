@@ -4,23 +4,23 @@ Independently review one manifest-defined landing at its bound repository Heads 
 
 ## Preflight
 
-Require `Role: reviewer`, `Mode: intermediate|final`, `Branch`, absolute Spec, Scope and Output paths, one or more Evidence sources, `First finding ID: F<n>`, and complete `REVIEW_TARGET` blocks with canonical Path, Branch, full-SHA Base and Head.
+Require `Role: reviewer`, `Mode: intermediate|final`, `Branch`, absolute Spec, Scope, Notes and Output paths, one or more Evidence sources, `First finding ID: F<n>`, and complete `REVIEW_TARGET` blocks with canonical Path, Branch, full-SHA Base and Head.
 
 `Prior result` is valid for a successor after an external blocker or a rejected spec issue; the rejected-spec case also requires `Prior disposition: spec-issue-rejected`, and that disposition is invalid without `Prior result`.
 
 Before review, require every input to exist, Output not to exist, every target repository to be clean and on its named Branch and Head, and Base to be an ancestor of Head. A dirty target tree is `ERROR: dirty repository: <path>`; a target off its named Branch or Head, or with broken ancestry, is `ERROR: moved repository: <path>`; a malformed manifest, missing input, or occupied/unwritable Output is ERROR. On ERROR do not create Output.
 
-Use the current complete Spec, Scope, Evidence sources, and each Scope Open-finding reference. Treat write-role evidence as evidence to verify, not a conclusion. Inspect `Base..Head` and the Head code, configuration, tests, repository rules, and call relationships needed to judge the contract. Never modify Spec, Scope, manifest, or prior artifacts. During review do not modify product repositories or Git history; write only Output. Targeted read-only checks are allowed, and the trees must remain clean — remove anything a check leaves behind.
+Use the current complete Spec, Scope, Evidence sources, and each Scope Open-finding reference. Treat write-role evidence as evidence to verify, not a conclusion. Inspect `Base..Head` and the Head code, configuration, tests, repository rules, and call relationships needed to judge the contract. Never modify Spec, Scope, manifest, or prior artifacts. During review do not modify product repositories or Git history; write only Output. Targeted read-only checks are allowed, and the trees must remain clean — remove anything a check leaves behind. Read Notes per [notes.md](notes.md); append to it only as that file allows.
 
 ## Review standard
 
-Check that verification actually covers Scope/Spec obligations, evidence commands and results support their claims, current code agrees with evidence, and regression, integration, compatibility, acceptance, or landing-safety coverage is not missing.
+Check that verification actually covers Scope/Spec obligations, evidence commands and results support their claims, current code agrees with evidence, and regression, integration, compatibility, acceptance, or landing-safety coverage is not missing. Evidence for an invariant must exercise its recorded break conditions; the presence of guarding code is not sufficient.
 
 Intermediate review reports only defects introduced by this phase or pre-existing defects that prevent its Requirements, Acceptance, Verify, or stable Landing. Exclude unrelated existing issues, future requirements, preferences, praise, generic best practices, and speculative improvements.
 
 Final review is an unrestricted review of the current complete Spec and final landing at all target Heads. Report any current spec violation even when the defective line predates `Base..Head`. Confirm whole-spec verification coverage; sufficiently strong supplied evidence may support that conclusion without rerunning every suite.
 
-Each finding describes one root issue and is independently actionable from its line and cited authority. Combine one root cause affecting several R/A. Include minimum sufficient `path:line` locations, the relevant R/A ID or exact criterion name, actual behavior, and concrete consequence. A standards finding cites the governing file and rule. A finding needs no fix proposal unless a constraint is otherwise unclear. Finding text may contain `|`.
+Each finding describes one root issue and is independently actionable from its line and cited authority. Combine one root cause affecting several R/A. Include minimum sufficient `path:line` locations, the relevant R/A ID or exact criterion name, actual behavior, and concrete consequence. A standards finding cites the governing file and rule. A finding needs no fix proposal unless a constraint is otherwise unclear. Finding text may contain `|`. Every finding carries an attribution per `notes.md` and the controller's rule: `breaks I<k>` when the recorded invariant is right and the code fails to hold it, `uncovered` when no recorded invariant covers the failing state.
 
 Use exactly:
 
@@ -32,7 +32,7 @@ Choose severity by impact, not repair effort.
 
 `contract-blocking:` is a finding-text prefix, not a severity. Use it when a current Requirement, Acceptance, Landing, or necessary Verify cannot be established, including insufficient evidence that prevents confirmation. Such a finding is Important or Critical, never Minor.
 
-Classify code and landing defects under findings. Use `SPEC_ISSUE` only for a contradiction in the current Spec, a false codebase/API/platform premise in it, or an acceptance rule that cannot determine correctness. Use `EXTERNAL_BLOCKER` only when code and spec are valid but required external state is unavailable. Do not duplicate one issue across categories.
+Classify code and landing defects under findings. Use `SPEC_ISSUE` only for a contradiction in the current Spec, a false premise in it or in Notes that it relies on, an acceptance rule that cannot determine correctness, or a state the landing must handle on which the Spec is silent. Use `EXTERNAL_BLOCKER` only when code and spec are valid but required external state is unavailable. Do not duplicate one issue across categories.
 
 ## Result file
 
@@ -47,7 +47,7 @@ For `addressed`, cite the code, behavior, or verification proving the defect is 
 Start new findings at the manifest's `First finding ID` and number consecutively:
 
 ```text
-F<n> | critical|important|minor | <self-contained finding>
+F<n> | critical|important|minor | breaks I<k>|uncovered | <self-contained finding>
 ```
 
 Intermediate Output:
@@ -91,15 +91,15 @@ Finalize the complete review sections at the manifest-bound Heads before modifyi
 
 Resolve the whole wave, including its Minor findings:
 
-- fix each root problem without expanding the current contract;
+- fix each root problem without expanding the current contract; when the wave is model-level — any finding is `uncovered` — first append the revised or new invariant to Notes, then make the code hold it;
 - preserve the intermediate stable landing, or in final mode preserve the whole integrated product contract;
-- follow repository instructions and, before `Fix: DONE`, run affected tests, integration checks, Scope Verify, and acceptance verification;
+- follow repository instructions and, before `Fix: DONE`, run affected tests, integration checks, Scope Verify, and acceptance verification, exercising the break conditions of every invariant the wave names;
 - commit coherent changes without rewriting existing history; do not create empty commits for unchanged repositories; and
 - leave every modified tree clean on the manifest's `Branch`. Do not push, amend, rebase, or reset.
 
 Modify only the repositories the wave requires and the exact Output. In every repository you modify, work on the manifest's `Branch`, creating it from the repository's current branch on first touch. Before modifying a repository, require its tree clean. A dirty tree before you modify any repository is `ERROR: dirty repository: <path>`: do not create Output; after that, a dirty tree you cannot clear is a `Blocker`.
 
-On the FIX lines: a contradiction in the current Spec, a false codebase/API/platform premise in it, or an acceptance rule that cannot determine correctness found while fixing is a `Spec issue`; a valid obligation blocked by unavailable equipment, access, service, or third-party state is an `External blocker`; any other impediment you cannot clear is a `Blocker`. Record one issue in exactly one place, review section or FIX line. Once any repository is modified, never ERROR: incomplete wave resolution yields `Fix: BLOCKED`; commit only coherent tested landings and report every actual Head.
+On the FIX lines: a contradiction in the current Spec, a false premise in it or in Notes that it relies on, an acceptance rule that cannot determine correctness, or a state the landing must handle on which the Spec is silent, found while fixing is a `Spec issue`; a valid obligation blocked by unavailable equipment, access, service, or third-party state is an `External blocker`; any other impediment you cannot clear is a `Blocker`. Record one issue in exactly one place, review section or FIX line. Once any repository is modified, never ERROR: incomplete wave resolution yields `Fix: BLOCKED`; commit only coherent tested landings and report every actual Head.
 
 Write Output once, after the fix stage ends; the FIX section sits between the review sections and `Result-complete: yes`:
 

@@ -32,7 +32,7 @@ When the frontier is empty, present a concise summary of what was settled:
 
 - the outcome and its boundaries
 - the requirements and decisions the work must honor
-- the facts relied on and the risks accepted
+- the facts relied on, each with how it was established, and the risks accepted
 
 ## Next action
 

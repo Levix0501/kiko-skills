@@ -56,4 +56,17 @@ for child in scopes dispatch results decisions; do
   fi
 done
 
+notes_dir="$kiko_root/notes"
+[ -d "$notes_dir" ] && [ ! -L "$notes_dir" ] || {
+  echo "expected existing notes directory: $notes_dir" >&2
+  exit 2
+}
+
+notes="$notes_dir/$spec_name"
+if [ -e "$notes" ] || [ -L "$notes" ]; then
+  [ -f "$notes" ] && [ ! -L "$notes" ] || { echo "expected notes file: $notes" >&2; exit 2; }
+else
+  printf '# Notes — %s\n\n## Facts\n\n## Invariants\n' "$spec_name" >"$notes"
+fi
+
 cd "$dir" && pwd -P
