@@ -2,7 +2,7 @@
 
 Read this reference when Step 13 routes a re-review wave to the user: the wave is model-level and the round it judges was model-level too, or it holds a finding marked `not_addressed`; the choice is the user's.
 
-A finding is `F<n> | critical|important|minor | breaks I<k>|uncovered | <self-contained finding>`. `contract-blocking:` is a finding-text prefix, not a severity. It means a current Requirement, Acceptance, Landing, or necessary Verify cannot be established; it must be Important or Critical and cannot be risk-accepted.
+A finding is `F<n> | critical|important|minor | breaks I<k>|uncovered|- | <self-contained finding>`. `contract-blocking:` is a finding-text prefix, not a severity. It means a current Requirement, Acceptance, Landing, or necessary Verify cannot be established; it must be Important or Critical and cannot be risk-accepted.
 
 The open wave is every finding the re-review defines or marks `not_addressed`. Show it complete — source, severity, attribution, full finding, contract-blocking state, and the current Notes line of every invariant it names — and offer only `Fix again`, `Accept risk`, and `Incomplete`:
 

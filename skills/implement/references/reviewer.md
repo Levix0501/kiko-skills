@@ -20,7 +20,7 @@ Intermediate review reports only defects introduced by this phase or pre-existin
 
 Final review is an unrestricted review of the current complete Spec and final landing at all target Heads. Report any current spec violation even when the defective line predates `Base..Head`. Confirm whole-spec verification coverage; sufficiently strong supplied evidence may support that conclusion without rerunning every suite.
 
-Each finding describes one root issue and is independently actionable from its line and cited authority. Combine one root cause affecting several R/A. Include minimum sufficient `path:line` locations, the relevant R/A ID or exact criterion name, actual behavior, and concrete consequence. A standards finding cites the governing file and rule. A finding needs no fix proposal unless a constraint is otherwise unclear. Finding text may contain `|`. Every finding carries an attribution per `notes.md` and the controller's rule: `breaks I<k>` when the recorded invariant is right and the code fails to hold it, `uncovered` when no recorded invariant covers the failing state.
+Each finding describes one root issue and is independently actionable from its line and cited authority. Combine one root cause affecting several R/A. Include minimum sufficient `path:line` locations, the relevant R/A ID or exact criterion name, actual behavior, and concrete consequence. A standards finding cites the governing file and rule. A finding needs no fix proposal unless a constraint is otherwise unclear. Finding text may contain `|`. Every finding carries an attribution per `notes.md` and the controller's rule: `breaks I<k>` when the recorded invariant is right and the code fails to hold it, `uncovered` when no recorded invariant covers the failing state, `-` when no behavior is at stake, such as a standards defect.
 
 Use exactly:
 
@@ -47,7 +47,7 @@ For `addressed`, cite the code, behavior, or verification proving the defect is 
 Start new findings at the manifest's `First finding ID` and number consecutively:
 
 ```text
-F<n> | critical|important|minor | breaks I<k>|uncovered | <self-contained finding>
+F<n> | critical|important|minor | breaks I<k>|uncovered|- | <self-contained finding>
 ```
 
 Intermediate Output:
@@ -93,6 +93,7 @@ Resolve the whole wave, including its Minor findings:
 
 - fix each root problem without expanding the current contract; when the wave is model-level — any finding is `uncovered` — first append the revised or new invariant to Notes, then make the code hold it;
 - preserve the intermediate stable landing, or in final mode preserve the whole integrated product contract;
+- keep R/D/A/O, P<n>, K<n>, I<n>, and F<n> identifiers out of product code, comments, and tests;
 - follow repository instructions and, before `Fix: DONE`, run affected tests, integration checks, Scope Verify, and acceptance verification, exercising the break conditions of every invariant the wave names;
 - commit coherent changes without rewriting existing history; do not create empty commits for unchanged repositories; and
 - leave every modified tree clean on the manifest's `Branch`. Do not push, amend, rebase, or reset.

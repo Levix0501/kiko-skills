@@ -18,6 +18,7 @@ For `Action: execute`, treat the repositories' current state as the starting poi
 
 - fix each supplied root problem without expanding the current contract; at `Level: model`, first append the revised or new invariant to Notes, then make the code hold it;
 - preserve the intermediate stable landing, or in final mode preserve the whole integrated product contract;
+- keep R/D/A/O, P<n>, K<n>, I<n>, and F<n> identifiers out of product code, comments, and tests;
 - follow repository instructions and, before DONE, run affected tests, integration checks, Scope Verify, and acceptance verification, exercising the break conditions of every invariant the wave names;
 - commit coherent changes without rewriting existing history; do not create empty commits for unchanged repositories; and
 - leave every modified tree clean on the manifest's `Branch`. Do not push, amend, rebase, or reset.

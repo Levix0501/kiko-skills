@@ -21,6 +21,7 @@ For `Action: execute`, treat the repositories' current state as the starting poi
 - implement every scoped requirement, acceptance item, and open finding end to end;
 - preserve compatibility unless the Spec changes it and leave no unsafe stub or half-migration;
 - follow each repository's governing instructions;
+- keep R/D/A/O, P<n>, K<n>, I<n>, and F<n> identifiers out of product code, comments, and tests;
 - before DONE, verify the complete Scope regardless of how much this dispatch changed: run Scope Verify, affected repository tests, necessary integration checks, and acceptance verification, exercising the break conditions of every invariant the Scope relies on;
 - before DONE, append to Notes the invariants by which the landing satisfies each scoped Requirement and binding decision — one line per mechanism, citing every R/D it carries — and any fact established during the work;
 - commit coherent changes without rewriting existing history; do not create empty commits for unchanged repositories; and

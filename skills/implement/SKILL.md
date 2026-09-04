@@ -394,7 +394,8 @@ Return only `RESULT: <path>`, or `ERROR: <reason>` if the manifest cannot be saf
 Every finding names the invariant it concerns:
 
 - `breaks I<k>` — the recorded invariant is right and the code fails to hold it;
-- `uncovered` — no recorded invariant covers the failing state, including an invariant the supplied wave already broke and the fix held as recorded.
+- `uncovered` — no recorded invariant covers the failing state, including an invariant the supplied wave already broke and the fix held as recorded;
+- `-` — no behavior is at stake: a standards or hygiene defect, always Minor.
 
 A wave is model-level when any finding in it is `uncovered`, otherwise code-level. A code-level wave is fixed in the code. A model-level wave is fixed by first appending the revised or new invariant to Notes, then making the code hold it.
 

@@ -26,7 +26,7 @@ Intermediate mode admits a new defect caused by the fix wave, including effects 
 
 Final mode remains accountable for the complete current Spec at current Heads. Re-derive all Requirements and Acceptance, reconfirm evidence and cross-phase/repository integration, and admit a new finding when the fix caused it or when it identifies the exact current requirement, acceptance, integration, compatibility, or landing-safety claim it invalidates.
 
-Each new finding describes one root issue, contains minimum sufficient `path:line` evidence, cites the applicable R/A or exact criterion, states actual behavior and consequence, and stands alone for a fresh fixer. Combine duplicate effects of one root cause. Finding text may contain `|`. Every finding carries an attribution per `notes.md` and the controller's rule: `breaks I<k>` when the recorded invariant is right and the code fails to hold it, `uncovered` when no recorded invariant covers the failing state. A new defect on an invariant the supplied wave already broke is `uncovered`.
+Each new finding describes one root issue, contains minimum sufficient `path:line` evidence, cites the applicable R/A or exact criterion, states actual behavior and consequence, and stands alone for a fresh fixer. Combine duplicate effects of one root cause. Finding text may contain `|`. Every finding carries an attribution per `notes.md` and the controller's rule: `breaks I<k>` when the recorded invariant is right and the code fails to hold it, `uncovered` when no recorded invariant covers the failing state, `-` when no behavior is at stake, such as a standards defect. A new defect on an invariant the supplied wave already broke is `uncovered`.
 
 Use exactly:
 
@@ -45,7 +45,7 @@ Put code/landing defects in `NEW_FINDINGS`. Use `SPEC_ISSUE` only for a contradi
 Start new findings at the manifest's `First finding ID` and number consecutively:
 
 ```text
-F<n> | critical|important|minor | breaks I<k>|uncovered | <self-contained finding>
+F<n> | critical|important|minor | breaks I<k>|uncovered|- | <self-contained finding>
 ```
 
 Intermediate Output:

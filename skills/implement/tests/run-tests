@@ -151,7 +151,7 @@ t06_role_output_interfaces_are_complete() {
     contains "$contract" 'Status: clean|issues' || return 1
     contains "$contract" 'Result-complete: yes' || return 1
     contains "$contract" 'addressed|invalid|not_addressed | <' || return 1
-    contains "$contract" 'breaks I<k>|uncovered | <self-contained finding>' || return 1
+    contains "$contract" 'breaks I<k>|uncovered|- | <self-contained finding>' || return 1
     contains "$contract" '<every current Requirement and Acceptance ID or exact name, in spec order>' || return 1
   done
 
@@ -175,6 +175,9 @@ t07_cross_role_protocol_is_consistent() {
   done
   contains "$SKILL" 'reporting a dirty or moved repository' || return 1
   contains "$SKILL" 'A second consecutive protocol failure at the same dispatch step' || return 1
+  for role in implementer fixer reviewer; do
+    contains "$REFERENCES/$role.md" 'keep R/D/A/O, P<n>, K<n>, I<n>, and F<n> identifiers out of product code, comments, and tests' || return 1
+  done
   contains "$SKILL" 'with no Head advanced, it is confirmed as well' || return 1
   [ "$(grep -cF "never route the result's lower-priority conclusions directly" "$SKILL")" -eq 4 ] || return 1
   contains "$SKILL" 'Phase P<n>: review+fix result — results/<name>.md' || return 1
@@ -225,6 +228,8 @@ t08_conditional_references_are_linked_and_complete() {
   contains "$REFERENCES/finding-gate.md" 'or it holds a finding marked' || return 1
   contains "$SKILL" 'or the wave holds a finding the re-review marks' || return 1
   contains "$SKILL" '#26-attribution-and-level' || return 1
+  contains "$SKILL" 'no behavior is at stake: a standards or hygiene defect, always Minor' || return 1
+  contains "$REFERENCES/finding-gate.md" 'breaks I<k>|uncovered|- | <self-contained finding>' || return 1
   contains "$REFERENCES/finding-gate.md" 'Phase P<n>: risk acceptance — decisions/<name>.md' || return 1
   contains "$REFERENCES/spec-amendment.md" 'Decided by: controller|user' || return 1
   contains "$REFERENCES/spec-amendment.md" '(../SKILL.md#successor-fields)' || return 1
