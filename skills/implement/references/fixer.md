@@ -48,6 +48,7 @@ END_REPOSITORY
 
 Integration: <commands and concise results, or n/a with reason>
 Acceptance: <checks and concise results, or n/a with reason>
+Notes: <IDs appended, or none with reason>
 Concern: <finding ID and non-blocking issue for re-review; repeat or omit>
 Blocker: <code blocker> | next: <specific action needed>; repeat or omit
 Spec issue: <problem and root cause>; repeat or omit

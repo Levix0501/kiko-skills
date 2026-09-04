@@ -118,6 +118,7 @@ END_REPOSITORY
 
 Integration: <commands and concise results, or n/a with reason>
 Acceptance: <checks and concise results, or n/a with reason>
+Notes: <IDs appended, or none with reason>
 Blocker: <code blocker> | next: <specific action needed>; repeat or omit
 Spec issue: <problem and root cause>; repeat or omit
 External blocker: <affected R/A> | owner: <owner> | action: <specific user action> | verify: <procedure>; repeat or omit

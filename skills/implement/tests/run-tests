@@ -143,7 +143,9 @@ t06_role_output_interfaces_are_complete() {
     contains "$contract" 'Status: DONE|BLOCKED' || return 1
     contains "$contract" 'END_REPOSITORY' || return 1
     contains "$contract" 'Evidence-complete: yes' || return 1
+    contains "$contract" 'Notes: <IDs appended, or none with reason>' || return 1
   done
+  contains "$REFERENCES/implementer.md" 'recorded in Notes, committed, and clean' || return 1
 
   for contract in "$REFERENCES/reviewer.md" "$REFERENCES/re-reviewer.md"; do
     contains "$contract" 'Status: clean|issues' || return 1
@@ -156,6 +158,7 @@ t06_role_output_interfaces_are_complete() {
   contains "$REFERENCES/reviewer.md" 'FIX:' || return 1
   contains "$REFERENCES/reviewer.md" 'END_FIX' || return 1
   contains "$REFERENCES/reviewer.md" 'Fix: DONE|BLOCKED' || return 1
+  contains "$REFERENCES/reviewer.md" 'Notes: <IDs appended, or none with reason>' || return 1
   contains "$REFERENCES/reviewer.md" 'END_REPOSITORY' || return 1
   contains "$REFERENCES/reviewer.md" 'Created from:' || return 1
 }

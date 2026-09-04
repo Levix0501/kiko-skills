@@ -50,6 +50,7 @@ END_REPOSITORY
 
 Integration: <commands and concise results, or n/a with reason>
 Acceptance: <checks and concise results, or n/a with reason>
+Notes: <IDs appended, or none with reason>
 Concern: <non-blocking issue for reviewer attention; repeat or omit>
 Blocker: <code blocker> | next: <specific action needed>; repeat or omit
 Spec issue: <problem and root cause>; repeat or omit
@@ -60,4 +61,4 @@ Evidence-complete: yes
 
 Repeat the repository block for every repository you modified so tests stay paired with repository state. `Branch` is the manifest's `Branch`. `Base` is the commit the work started from — on first touch, the commit the `Branch` was created from. `Head` is the completed Head. Summarize commands and results rather than copying full logs.
 
-DONE means the complete Scope is implemented, verified, committed, and clean. It may contain Concern but contains no Blocker, Spec issue, External blocker, or Remaining. BLOCKED requires Remaining and at least one applicable issue category. Create the complete evidence file even when no product commit was possible after execution began.
+DONE means the complete Scope is implemented, verified, recorded in Notes, committed, and clean. It may contain Concern but contains no Blocker, Spec issue, External blocker, or Remaining. BLOCKED requires Remaining and at least one applicable issue category. Create the complete evidence file even when no product commit was possible after execution began.
