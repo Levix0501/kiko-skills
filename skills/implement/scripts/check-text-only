@@ -1,0 +1,101 @@
+#!/usr/bin/env bash
+# check-text-only REPO BASE HEAD
+# Exit 0 when every change between BASE and HEAD is a comment line, a trailing
+# comment, a documentation file, or blank; 1 when any change may reach behavior
+# (each such change is printed); 2 on usage or Git error. Paths under .kiko/
+# are ignored; files under a migrations/ directory never count as text-only.
+set -u
+
+if [ "$#" -ne 3 ]; then
+  echo "usage: check-text-only REPO BASE HEAD" >&2
+  exit 2
+fi
+repo=$1
+base=$2
+head=$3
+
+for rev in "$base" "$head"; do
+  git -C "$repo" rev-parse --verify --quiet "$rev^{commit}" >/dev/null 2>&1 ||
+    { echo "check-text-only: bad revision: $rev" >&2; exit 2; }
+done
+
+diff_file=$(mktemp "${TMPDIR:-/tmp}/check-text-only.XXXXXX") || exit 2
+trap 'rm -f "$diff_file"' EXIT
+git -C "$repo" diff --no-color --no-ext-diff --no-renames -U0 "$base" "$head" -- . ':(exclude).kiko' >"$diff_file" ||
+  { echo "check-text-only: git diff failed" >&2; exit 2; }
+
+awk '
+function bad(m) { hits++; if (hits <= 50) print m }
+function ext(p,   n, a) { n = split(p, a, "."); return (n > 1 && a[n] !~ /\//) ? tolower(a[n]) : "" }
+function name(p,   n, b) { n = split(p, b, "/"); return b[n] }
+function kind(p,   e, f) {
+  if (p ~ /(^|\/)migrations\//) return "never"
+  e = ext(p); f = name(p)
+  if (e ~ /^(md|mdx|markdown|rst|adoc)$/) return "doc"
+  if (e ~ /^(go|ts|tsx|js|jsx|mjs|cjs|java|kt|kts|swift|c|h|cc|cpp|hpp|cs|rs|scala|dart|proto)$/) return "slash"
+  if (e ~ /^(css|scss|less)$/) return "block"
+  if (e ~ /^(py|rb|sh|bash|zsh|fish|yml|yaml|toml|ini|cfg|conf|env|pl|r|mk)$/ || f == "Dockerfile" || f == "Makefile" || f ~ /^\.env/) return "hash"
+  if (e ~ /^(sql|lua|hs)$/) return "dash"
+  if (e ~ /^(html|htm|xml|svg)$/) return "angle"
+  if (e ~ /^(vue|svelte)$/) return "mixed"
+  return "unknown"
+}
+function marker(k) {
+  if (k == "slash" || k == "mixed") return "//"
+  if (k == "hash") return "#"
+  if (k == "dash") return "--"
+  return ""
+}
+function star(s) { return (s ~ /^\*\// || (s ~ /^\*([ \t]|$)/ && s !~ /\{/)) }
+function comment(k, s) {
+  if (s ~ /^[ \t]*$/) return 1
+  sub(/^[ \t]+/, "", s)
+  if (k == "slash") return (s ~ /^\/\// || s ~ /^\/\*/ || star(s))
+  if (k == "block") return (s ~ /^\/\*/ || star(s))
+  if (k == "hash") return (s ~ /^#/)
+  if (k == "dash") return (s ~ /^--/)
+  if (k == "angle") return (s ~ /^<!--/ || s ~ /^-->/)
+  if (k == "mixed") return (s ~ /^\/\// || s ~ /^\/\*/ || star(s) || s ~ /^<!--/ || s ~ /^-->/)
+  return 0
+}
+function code(k, s,   m, i, pre) {
+  m = marker(k)
+  if (m != "") {
+    i = index(s, m)
+    if (i > 0) {
+      pre = substr(s, 1, i - 1)
+      if (gsub(/"/, "\"", pre) % 2 == 0 && gsub(sq, sq, pre) % 2 == 0 && gsub(/`/, "`", pre) % 2 == 0) s = pre
+    }
+  }
+  sub(/[ \t]+$/, "", s)
+  return s
+}
+function flush(   i) {
+  if (k == "doc") { nminus = 0; nplus = 0; return }
+  if (k == "never") {
+    for (i = 1; i <= nminus; i++) bad(file ":- " minus[i])
+    for (i = 1; i <= nplus; i++) bad(file ":+ " plus[i])
+    nminus = 0; nplus = 0; return
+  }
+  for (i = 1; i <= nminus; i++) mok[i] = comment(k, minus[i])
+  for (i = 1; i <= nplus; i++) pok[i] = comment(k, plus[i])
+  if (nminus == nplus)
+    for (i = 1; i <= nminus; i++)
+      if ((!mok[i] || !pok[i]) && code(k, minus[i]) == code(k, plus[i])) { mok[i] = 1; pok[i] = 1 }
+  for (i = 1; i <= nminus; i++) if (!mok[i]) bad(file ":- " minus[i])
+  for (i = 1; i <= nplus; i++) if (!pok[i]) bad(file ":+ " plus[i])
+  nminus = 0; nplus = 0
+}
+function path(line,   p) { p = substr(line, 5); if (p ~ /^[ab]\//) p = substr(p, 3); return p }
+BEGIN { sq = sprintf("%c", 39); nminus = 0; nplus = 0; inhunk = 0; k = "unknown" }
+/^diff --git / { flush(); file = ""; k = "unknown"; inhunk = 0; next }
+/^(old|new) mode / { bad("mode: " $0); next }
+/^Binary files / { bad("binary: " $0); next }
+inhunk == 0 && /^--- / { if ($0 != "--- /dev/null") { file = path($0); k = kind(file) }; next }
+inhunk == 0 && /^\+\+\+ / { if ($0 != "+++ /dev/null") { file = path($0); k = kind(file) }; next }
+/^@@ / { flush(); inhunk = 1; next }
+/^\\ No newline/ { next }
+inhunk == 1 && /^-/ { minus[++nminus] = substr($0, 2); next }
+inhunk == 1 && /^\+/ { plus[++nplus] = substr($0, 2); next }
+END { flush(); exit hits ? 1 : 0 }
+' "$diff_file"

@@ -10,7 +10,7 @@ Require `Role: implementer`, `Action: execute|evidence-recovery`, `Mode: interme
 
 Before work, require every input to exist and Output not to exist. A malformed manifest, missing input, or occupied/unwritable Output is ERROR: do not create Output.
 
-Use the current complete Spec and Scope as the contract. Scope defines this phase's implementation obligations and stable boundary; `Mode: final` additionally requires whole-spec integration/regression verification, not implementation outside the scope. Open findings are defined at the result references in Scope. Read Notes per [notes.md](notes.md); append to it only as that file allows.
+Use the current complete Spec and Scope as the contract. Scope defines this phase's implementation obligations and stable boundary; `Mode: final` additionally requires whole-spec integration/regression verification, not implementation outside the scope. Open findings are defined at the result references in Scope. Read Notes per [notes.md](notes.md); append to it only as that file allows. While a command you started is still running, wait for it with a blocking call; do not pass the time with no-op commands, and never end your turn to wait.
 
 Decide which product repositories the Scope requires and modify only those repositories and the exact Output; do not modify Spec, Scope, manifest, or prior artifacts. In every repository you modify, work on the manifest's `Branch`, creating it from the repository's current branch on first touch. Before modifying a repository, require its tree clean. A dirty tree before you modify any repository is `ERROR: dirty repository: <path>`: do not create Output; after that, a dirty tree you cannot clear is a `Blocker`.
 

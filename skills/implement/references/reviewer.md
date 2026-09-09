@@ -10,7 +10,7 @@ Require `Role: reviewer`, `Mode: intermediate|final`, `Branch`, absolute Spec, S
 
 Before review, require every input to exist, Output not to exist, every target repository to be clean and on its named Branch and Head, and Base to be an ancestor of Head. A dirty target tree is `ERROR: dirty repository: <path>`; a target off its named Branch or Head, or with broken ancestry, is `ERROR: moved repository: <path>`; a malformed manifest, missing input, or occupied/unwritable Output is ERROR. On ERROR do not create Output.
 
-Use the current complete Spec, Scope, Evidence sources, and each Scope Open-finding reference. Treat write-role evidence as evidence to verify, not a conclusion. Inspect `Base..Head` and the Head code, configuration, tests, repository rules, and call relationships needed to judge the contract. Never modify Spec, Scope, manifest, or prior artifacts. During review do not modify product repositories or Git history; write only Output. Targeted read-only checks are allowed, and the trees must remain clean — remove anything a check leaves behind. Read Notes per [notes.md](notes.md); append to it only as that file allows.
+Use the current complete Spec, Scope, Evidence sources, and each Scope Open-finding reference. Treat write-role evidence as evidence to verify, not a conclusion. Inspect `Base..Head` and the Head code, configuration, tests, repository rules, and call relationships needed to judge the contract. Never modify Spec, Scope, manifest, or prior artifacts. During review do not modify product repositories or Git history; write only Output. Targeted read-only checks are allowed, and the trees must remain clean — remove anything a check leaves behind. Read Notes per [notes.md](notes.md); append to it only as that file allows. While a command you started is still running, wait for it with a blocking call; do not pass the time with no-op commands, and never end your turn to wait.
 
 ## Review standard
 
@@ -93,7 +93,6 @@ Resolve the whole wave, including its Minor findings:
 
 - fix each root problem without expanding the current contract; when the wave is model-level — any finding is `uncovered` — first append the revised or new invariant to Notes, then make the code hold it;
 - preserve the intermediate stable landing, or in final mode preserve the whole integrated product contract;
-- keep R/D/A/O, P<n>, K<n>, I<n>, and F<n> identifiers out of product code, comments, and tests;
 - follow repository instructions and, before `Fix: DONE`, run affected tests, integration checks, Scope Verify, and acceptance verification, exercising the break conditions of every invariant the wave names;
 - commit coherent changes without rewriting existing history; do not create empty commits for unchanged repositories; and
 - leave every modified tree clean on the manifest's `Branch`. Do not push, amend, rebase, or reset.

@@ -8,6 +8,7 @@ SCRIPTS="$HERE/../scripts"
 REFERENCES="$HERE/../references"
 CHECK_KIKO="$SCRIPTS/check-kiko"
 PREPARE_DIR="$SCRIPTS/prepare-implement-dir"
+CHECK_TEXT="$SCRIPTS/check-text-only"
 SETUP_KIKO="$HERE/../../setup-kiko/scripts/init-kiko"
 KICK_CHECK="$HERE/../../kick-off/scripts/check-kiko"
 CREATE_CHECK="$HERE/../../create-spec/scripts/check-kiko"
@@ -44,7 +45,8 @@ run_rc() {
 t01_resource_layout() {
   [ -x "$CHECK_KIKO" ] || return 1
   [ -x "$PREPARE_DIR" ] || return 1
-  [ "$(find "$SCRIPTS" -maxdepth 1 -type f | wc -l | tr -d ' ')" -eq 2 ] || return 1
+  [ -x "$CHECK_TEXT" ] || return 1
+  [ "$(find "$SCRIPTS" -maxdepth 1 -type f | wc -l | tr -d ' ')" -eq 3 ] || return 1
   [ "$(find "$REFERENCES" -maxdepth 1 -type f -name '*.md' | wc -l | tr -d ' ')" -eq 7 ] || return 1
   [ -f "$REFERENCES/finding-gate.md" ] || return 1
   [ -f "$REFERENCES/notes.md" ] || return 1
@@ -169,14 +171,19 @@ t07_cross_role_protocol_is_consistent() {
     contract="$REFERENCES/$role.md"
     contains "$contract" "$spec_issue" || return 1
     contains "$contract" '[notes.md](notes.md)' || return 1
+    contains "$contract" 'never end your turn to wait' || return 1
     contains "$contract" 'do not create Output' || return 1
     contains "$contract" 'ERROR: dirty repository: <path>' || return 1
     contains "$contract" 'ERROR: moved repository: <path>' || return 1
   done
   contains "$SKILL" 'reporting a dirty or moved repository' || return 1
+  contains "$SKILL" 'offer the choice — commit the content as it stands in one commit on the current branch and continue, continue after they clean it, or end the run (Step 18)' || return 1
   contains "$SKILL" 'A second consecutive protocol failure at the same dispatch step' || return 1
-  for role in implementer fixer reviewer; do
+  for role in implementer fixer; do
     contains "$REFERENCES/$role.md" 'keep R/D/A/O, P<n>, K<n>, I<n>, and F<n> identifiers out of product code, comments, and tests' || return 1
+  done
+  for role in reviewer re-reviewer; do
+    not_contains "$REFERENCES/$role.md" 'identifiers out of product code' || return 1
   done
   contains "$SKILL" 'with no Head advanced, it is confirmed as well' || return 1
   [ "$(grep -cF "never route the result's lower-priority conclusions directly" "$SKILL")" -eq 4 ] || return 1
@@ -228,6 +235,8 @@ t08_conditional_references_are_linked_and_complete() {
   contains "$REFERENCES/finding-gate.md" 'or it holds a finding marked' || return 1
   contains "$SKILL" 'or the wave holds a finding the re-review marks' || return 1
   contains "$SKILL" '#26-attribution-and-level' || return 1
+  contains "$SKILL" '#27-re-review-need' || return 1
+  contains "$SKILL" 'scripts/check-text-only' || return 1
   contains "$SKILL" 'no behavior is at stake: a standards or hygiene defect, always Minor' || return 1
   contains "$REFERENCES/finding-gate.md" 'breaks I<k>|uncovered|- | <self-contained finding>' || return 1
   contains "$REFERENCES/finding-gate.md" 'Phase P<n>: risk acceptance — decisions/<name>.md' || return 1
@@ -318,6 +327,59 @@ t13_notes_reference_is_shared() {
   contains "$SKILL" 'NOTES_FILE="$KIKO_ROOT/notes/$SPEC_NAME"'
 }
 
+t14_check_text_only_classifies_fix_deltas() {
+  root="$TEST_TMP/text-only"
+  new_repo "$root"
+  mkdir -p "$root/server/migrations" "$root/deploy" "$root/.kiko/specs"
+  printf 'package x\n\n// answer is the answer.\nfunc answer() int { return 42 } // answer\n\nvar u = "http://a" // note\n' >"$root/server/x.go"
+  printf '/*\n * set writes one.\n */\nfunc set(p *int) {\n\t*p = 1\n}\n' >"$root/server/y.go"
+  printf -- '-- create the table\nCREATE TABLE t (id int);\n' >"$root/server/migrations/0001_t.up.sql"
+  printf -- '-- pick\nSELECT 1;\n' >"$root/server/q.sql"
+  printf '# services\nservices: {}\n' >"$root/deploy/compose.yml"
+  printf '# Readme\n' >"$root/README.md"
+  printf '# spec\n' >"$root/.kiko/specs/2026-08-26-x.md"
+  git -C "$root" add -A && git -C "$root" commit -qm base || return 1
+  prev=$(git -C "$root" rev-parse HEAD)
+
+  step() {
+    git -C "$root" add -A && git -C "$root" commit -qm "$1" || return 1
+    head=$(git -C "$root" rev-parse HEAD)
+    run_rc "$2" "$CHECK_TEXT" "$root" "$prev" "$head" || return 1
+    prev=$head
+  }
+
+  printf 'package x\n\n// answer is still the answer.\nfunc answer() int { return 42 } // the answer\n\nvar u = "http://a" // note\n' >"$root/server/x.go"
+  printf -- '-- pick one\nSELECT 1;\n' >"$root/server/q.sql"
+  printf '# Readme\n\nMore words.\n' >"$root/README.md"
+  printf '# all services\nservices: {}\n' >"$root/deploy/compose.yml"
+  printf 'package k\n\nfunc k() {}\n' >"$root/.kiko/k.go"
+  printf '/*\n * set writes the number one.\n */\nfunc set(p *int) {\n\t*p = 1\n}\n' >"$root/server/y.go"
+  step text-only 0 || return 1
+
+  printf '/*\n * set writes the number one.\n */\nfunc set(p *int) {\n\t*p = 2\n}\n' >"$root/server/y.go"
+  step star-statement 1 || return 1
+
+  printf 'package x\n\n// answer is still the answer.\nfunc answer() int { return 43 } // the answer\n\nvar u = "http://a" // note\n' >"$root/server/x.go"
+  git -C "$root" add -A && git -C "$root" commit -qm code || return 1
+  head=$(git -C "$root" rev-parse HEAD)
+  out=$("$CHECK_TEXT" "$root" "$prev" "$head")
+  [ $? -eq 1 ] || return 1
+  printf '%s' "$out" | grep -q 'server/x.go' || return 1
+  prev=$head
+
+  printf 'package x\n\n// answer is still the answer.\nfunc answer() int { return 43 } // the answer\n\nvar u = "http://b" // note\n' >"$root/server/x.go"
+  step string-before-comment 1 || return 1
+
+  printf -- '-- create the table t\nCREATE TABLE t (id int);\n' >"$root/server/migrations/0001_t.up.sql"
+  step migration-comment 1 || return 1
+
+  printf '\000\001\002' >"$root/blob.bin"
+  step binary 1 || return 1
+
+  run_rc 2 "$CHECK_TEXT" "$root" "$prev" || return 1
+  run_rc 2 "$CHECK_TEXT" "$root" "$prev" nope
+}
+
 TESTS='t01_resource_layout
 t02_check_kiko_is_shared_and_builds_are_optional
 t03_check_kiko_exit_codes
@@ -330,7 +392,8 @@ t09_removed_protocol_does_not_return
 t10_readme_quickstart_and_setup_scripts
 t11_dispatch_manifests_supply_contract_preflights
 t12_skill_supporting_paths_exist
-t13_notes_reference_is_shared'
+t13_notes_reference_is_shared
+t14_check_text_only_classifies_fix_deltas'
 
 for test_name in $TESTS; do
   if (set -e; "$test_name"); then

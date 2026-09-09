@@ -43,7 +43,7 @@ NOTES_FILE="$KIKO_ROOT/notes/$SPEC_NAME"
 
 - `$NOTES_FILE` — the spec's notes file, per [references/notes.md](references/notes.md).
 
-Then check every repository under `$PROJECT_ROOT` for uncommitted content: if any tree is not clean, show the user what you found and offer the choice — continue after they clean it, or end the run (Step 18).
+Then check every repository under `$PROJECT_ROOT` for uncommitted content: if any tree is not clean, show the user what you found and offer the choice — commit the content as it stands in one commit on the current branch and continue, continue after they clean it, or end the run (Step 18).
 
 Then continue to Step 4.
 
@@ -124,7 +124,7 @@ Then continue by result type: an implementation result or a fix result → Step 
 
 ### Step 8: Route the write-role result
 
-- `DONE` — for an implementation result, continue to Step 9; for a fix result, continue to Step 12. A Concern in DONE evidence is review input, not a blocker.
+- `DONE` — for an implementation result, continue to Step 9; for a fix result, continue to Step 12 when the round needs a re-review per [2.7 Re-review need](#27-re-review-need), otherwise the round is closed: for an intermediate phase, continue to Step 5; for a final phase, the run is Complete: continue to Step 17. A Concern in DONE evidence is review input, not a blocker.
 - `BLOCKED` — handle only the highest-priority reported category, in this order: spec issue (Step 14), then external blocker (Step 15), then code blocker (Step 16); never route the result's lower-priority conclusions directly.
 
 ### Step 9: Dispatch the reviewer
@@ -169,7 +169,7 @@ When the subagent returns, continue to Step 7.
 - `clean` — the phase's obligations are proven: for an intermediate phase, continue to Step 5 to plan the next phase; for a final phase, the run is Complete: continue to Step 17.
 - No FIX section, `issues` with only Minor findings on an intermediate phase — fixing defers: the phase completes and the findings carry as open findings; continue to Step 5 to plan the next phase.
 - No FIX section, a reported spec issue or external blocker — it outranks status routing: handle only the highest-priority reported category, in this order: spec issue (Step 14), then external blocker (Step 15); never route the result's lower-priority conclusions directly.
-- A FIX section with `Fix: DONE` — continue to Step 12.
+- A FIX section with `Fix: DONE` — continue to Step 12 when the round needs a re-review per [2.7 Re-review need](#27-re-review-need), otherwise the round is closed: for an intermediate phase, continue to Step 5; for a final phase, the run is Complete: continue to Step 17.
 - A FIX section with `Fix: BLOCKED` — handle only the highest-priority category on its FIX lines, in this order: spec issue (Step 14), then external blocker (Step 15), then code blocker (Step 16); never route the result's lower-priority conclusions directly.
 
 ### Step 11: Dispatch the fixer
@@ -400,3 +400,7 @@ Every finding names the invariant it concerns:
 A wave is model-level when any finding in it is `uncovered`, otherwise code-level. A code-level wave is fixed in the code. A model-level wave is fixed by first appending the revised or new invariant to Notes, then making the code hold it.
 
 A false recorded premise, and a state the landing must handle on which the spec is silent, are spec issues (Step 14), not findings.
+
+### 2.7 Re-review need
+
+A fix round is a review+fix result with `Fix: DONE` or a fix result with `Status: DONE`. Its wave is every finding the round resolved: for a review+fix result, the findings the review defines plus the carried findings it marks `not_addressed`; for a fix result, its manifest's `Finding sources`. The round needs a re-review unless every finding in the wave is attributed `-` and, for every repository the result reports modified, the bundled `scripts/check-text-only` with the repository path, `Base`, and `Head` as its arguments exits 0. A round that needs no re-review is closed: its findings are not open work and receive no verdict.
