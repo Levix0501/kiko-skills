@@ -9,8 +9,7 @@ RULES="$HERE/../references/spec-rules.md"
 REVIEW="$HERE/../references/self-review.md"
 CASES="$HERE/semantic-cases.md"
 CHECK_KIKO="$HERE/../scripts/check-kiko"
-NOTES="$HERE/../references/notes.md"
-IMPLEMENT_NOTES="$HERE/../../implement/references/notes.md"
+FACTS="$HERE/../references/facts.md"
 
 PASS=0
 FAIL=0
@@ -26,7 +25,7 @@ t01_resource_layout() {
     [ -f "$TEMPLATE" ] &&
     [ -f "$RULES" ] &&
     [ -f "$REVIEW" ] &&
-    [ -f "$NOTES" ] &&
+    [ -f "$FACTS" ] &&
     [ -f "$CASES" ]
 }
 
@@ -34,15 +33,17 @@ t02_skill_links_runtime_resources() {
   contains "$SKILL" '](references/spec-rules.md)' &&
     contains "$SKILL" '](assets/spec-template.md)' &&
     contains "$SKILL" '](references/self-review.md)' &&
-    contains "$SKILL" '](references/notes.md)'
+    contains "$SKILL" '](references/facts.md)'
 }
 
 t03_template_has_exact_authoritative_sections() {
   actual=$(sed -n '/^```markdown$/,/^```$/p' "$TEMPLATE" | grep '^## ')
-  expected='## 1. Normative Requirements
-## 2. Binding Design Decisions
-## 3. Observable Acceptance
-## 4. Out of Scope'
+  expected='## Goal
+## Glossary
+## Normative Requirements
+## Binding Design Decisions
+## Observable Acceptance
+## Out of Scope'
   [ "$actual" = "$expected" ]
 }
 
@@ -86,7 +87,7 @@ t06_rules_have_one_canonical_structure() {
 
 t07_self_review_is_complete_and_contiguous() {
   actual=$(grep -oE '^[0-9]+\.' "$REVIEW" | tr '\n' ' ')
-  expected='1. 2. 3. 4. 5. 6. 7. 8. 9. 10. 11. 12. '
+  expected='1. 2. 3. 4. 5. 6. 7. 8. 9. 10. '
   [ "$actual" = "$expected" ]
 }
 
@@ -101,17 +102,20 @@ t09_shell_is_valid() {
     bash -n "$0"
 }
 
-t10_notes_reference_is_shared() {
-  cmp -s "$NOTES" "$IMPLEMENT_NOTES" &&
-    contains "$NOTES" '- K<n> [verified: <source>|user|assumed] <statement> — bears on: <R/D IDs, or ->' &&
-    contains "$NOTES" 'breaks when: <conditions>; evidence:' &&
-    contains "$SKILL" '$KIKO_ROOT/notes/<same basename as the spec>' &&
+t10_facts_reference_is_own() {
+  contains "$FACTS" '- FACT<n> [user] <statement> — bears on: <DECISION, R, or D IDs>' &&
+    contains "$FACTS" '- FACT<n> [verified: <source>] <statement> — bears on: <DECISION, R, or D IDs>' &&
+    not_contains "$FACTS" 'K<n>' &&
+    contains "$SKILL" '$SPEC_DIR/facts.md' &&
     contains "$SKILL" 'without writing either file'
 }
 
-t11_rules_route_facts_to_notes() {
-  contains "$RULES" 'recorded in the notes file' &&
-    contains "$REVIEW" 'recorded in the notes file' &&
+t11_rules_route_facts_to_facts_file() {
+  contains "$RULES" 'recorded in the facts file' &&
+    contains "$REVIEW" 'recorded in the facts file' &&
+    not_contains "$RULES" 'notes file' &&
+    not_contains "$REVIEW" 'notes file' &&
+    not_contains "$SKILL" 'notes' &&
     not_contains "$RULES" 'create a project-facts layer'
 }
 
@@ -134,8 +138,8 @@ for test_name in \
   t07_self_review_is_complete_and_contiguous \
   t08_semantic_fixture_is_nonempty_and_well_formed \
   t09_shell_is_valid \
-  t10_notes_reference_is_shared \
-  t11_rules_route_facts_to_notes; do
+  t10_facts_reference_is_own \
+  t11_rules_route_facts_to_facts_file; do
   run_test "$test_name"
 done
 

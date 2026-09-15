@@ -15,7 +15,7 @@ candidate="$workspace_root/.kiko"
 [ ! -L "$candidate" ] || { echo "kiko: refusing symlink: $candidate" >&2; exit 2; }
 if [ ! -e "$candidate" ]; then
   echo "kiko: no .kiko found at project root: $workspace_root" >&2
-  echo "kiko: run /setup-kiko at the project root to initialize it" >&2
+  echo "kiko: run the setup-kiko skill at the project root to initialize it" >&2
   exit 3
 fi
 
@@ -27,7 +27,7 @@ require() {
   [ ! -L "$path" ] || { echo "kiko: refusing symlink: $path" >&2; exit 2; }
   if [ ! -e "$path" ]; then
     echo "kiko: incomplete layout: missing $path" >&2
-    echo "kiko: rerun /setup-kiko at the project root to repair it" >&2
+    echo "kiko: rerun the setup-kiko skill at the project root to repair it" >&2
     exit 3
   fi
   case "$kind" in
@@ -36,9 +36,8 @@ require() {
   esac
 }
 
-require dir "$candidate/specs"
+require dir "$candidate/docs"
 require dir "$candidate/.implement"
-require dir "$candidate/notes"
 require file "$candidate/TODO.md"
 require file "$candidate/.gitignore"
 

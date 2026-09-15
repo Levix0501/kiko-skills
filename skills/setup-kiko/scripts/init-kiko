@@ -37,13 +37,12 @@ check_file() {
 }
 
 check_dir "$kiko_dir"
-check_dir "$kiko_dir/specs"
+check_dir "$kiko_dir/docs"
 check_dir "$kiko_dir/.implement"
-check_dir "$kiko_dir/notes"
 check_file "$kiko_dir/TODO.md"
 check_file "$kiko_dir/.gitignore"
 
-mkdir -p "$kiko_dir/specs" "$kiko_dir/notes" "$kiko_dir/.implement"
+mkdir -p "$kiko_dir/docs" "$kiko_dir/.implement"
 
 create_file_if_missing() {
   path=$1
@@ -80,8 +79,8 @@ normalize_ignore_rules() {
     rm -f -- "$tmp_file"
     exit 2
   fi
-  printf '%s\n%s\n%s\n%s\n%s\n' \
-    "$marker" '/TODO.md' '/notes/' '/.implement/' '/.gitignore' >>"$tmp_file"
+  printf '%s\n%s\n%s\n%s\n' \
+    "$marker" '/TODO.md' '/.implement/' '/.gitignore' >>"$tmp_file"
 
   if ! cmp -s "$tmp_file" "$ignore_file"; then
     if file_mode=$(stat -f '%Lp' "$ignore_file" 2>/dev/null); then

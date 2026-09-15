@@ -1,15 +1,14 @@
 # Spec rules
 
-These rules decide what each candidate may enter the spec as, and gate the
+These rules decide what each decisions entry may enter the spec as, and gate the
 empirical facts used while forming it. To return an issue is to put it to the
 user; do not draft a version for confirmation until it is resolved.
 
 ## Authority
 
-Task-specific R and O must be grounded in settled input or an explicit user
-change during the current review. D has the same grounding requirement and
-must also be an explicitly authorized internal choice that later implementers
-may not replace.
+R and O must be grounded in a decisions entry. D must be grounded in an entry
+that binds the internal choice, which the implementer may not replace; an
+entry whose answer leaves the choice open binds nothing.
 
 A does not need separate authorization. It may be written by `create-spec` only
 as an exact observable derivation of R and D.
@@ -17,8 +16,7 @@ as an exact observable derivation of R and D.
 Repository rules, organizational policy, and other higher authority apply
 independently. Do not copy them into the spec merely for self-containment. If
 these authorities and the settled input imply different contract results,
-return the conflict instead of choosing between them. Only an explicit user
-decision on the returned conflict resolves it.
+return the conflict instead of choosing between them.
 
 ## R: normative requirement
 
@@ -41,11 +39,10 @@ an obligation.
 Ask:
 
 1. Does the statement choose or exclude a task-specific internal solution?
-2. Was that choice explicitly authorized in settled input or explicitly
-   requested by the user during the current review?
+2. Does a decisions entry bind that choice?
 
 Two yes answers admit D. Otherwise: omit a design clearly not meant to bind;
-return the ambiguity when the input supplies a design without settling whether
+return the ambiguity when an entry supplies a design without settling whether
 it binds; and return the choice as unresolved when the contract depends on it.
 `create-spec` does not originate D from its own recommendation, inference, or
 preferred default, and whole-document confirmation does not cure such an
@@ -91,45 +88,33 @@ acceptance grounds it.
 
 ## Contract terms
 
-Do not add a glossary. If a contract-critical term lacks one unambiguous
-ordinary meaning, define it at its first use in R, D, A, or O. A may define
-only an observation-specific term that does not change the qualifying set.
-Later uses must preserve the same meaning.
+A contract-critical term that lacks one unambiguous ordinary meaning is
+defined in the Glossary; a definition introduces no obligation. A may define
+inline an observation-specific term that does not change the qualifying set.
+Every use preserves the defined meaning.
 
 ## Non-contract content
 
 Omit content whose role is to describe current state, advise an implementation,
 or prescribe a replaceable execution procedure rather than define the delivery
 contract. This includes project facts, plans, investigation records, progress,
-and proof procedures. Project facts go to the notes file, not the spec.
-
-An empirical fact stays outside the spec even when it passes the evidence gate.
-If non-contractual status is unclear and omission could change user intent,
-return the ambiguity instead of deleting it.
+and proof procedures. A project fact the contract relies on is recorded in
+the facts file, not the spec. If non-contractual status is unclear and
+omission could change user intent, return the ambiguity instead of deleting
+it.
 
 ## Load-bearing premise evidence gate
 
 An empirical premise is a claim about the world that can be true or false
-independently of the contract. A normative choice does not become empirical
-merely because it is unimplemented or its feasibility is unknown.
+independently of the contract; a normative choice is not one merely because
+it is unimplemented or its feasibility is unknown.
 
-Apply the gate before an empirical premise first affects:
-
-- classification or omission;
-- R, D, A, or O wording or boundaries; or
-- a feasibility, conflict, or readiness conclusion.
-
-Ask whether the contract or readiness conclusion could differ if the premise
-were false or a reasonable competing explanation held. If not, do not let the
-premise affect the spec. If so, use it only when the evidence:
-
-- distinguishes the competing explanations that would change the result;
-- covers the scope in which the premise carries contract weight; and
-- supports no broader conclusion than the one used.
-
-The evidence or a verifiable summary must be available during the current
-self-review. It does not enter the spec; the premise, its evidence source, and
-the R/D it bears on are recorded in the notes file.
+Before a premise shapes the spec, ask whether the contract or its readiness
+would differ if the premise were false. If not, it does not affect the spec.
+If so, rely on it only with evidence that establishes it for the scope in
+which it carries contract weight and supports no broader conclusion than the
+one used. The evidence does not enter the spec; the premise, its source, and
+the R/D it bears on are recorded in the facts file.
 
 If a premise cannot be established:
 
@@ -142,12 +127,11 @@ If a premise cannot be established:
 ## Contract completeness and feasibility
 
 A contract is ready for confirmation when its obligations are complete, it has
-no known material conflict, and conformance is decidable. `create-spec` need
-not prove that a successful implementation exists. Input that settles no R
-gives nothing to confirm; return that instead of drafting.
+no known material conflict, and conformance is decidable. Input that settles
+no R gives nothing to confirm; return that instead of drafting.
 
-Missing feasibility proof does not block the contract; without evidence,
-`create-spec` claims neither feasibility nor infeasibility. Reliable evidence
-that no allowed solution can satisfy all obligations, or that applicable
-authorities materially conflict, blocks confirmation until the conflict is
-resolved.
+`create-spec` need not prove that a successful implementation exists and,
+without evidence, claims neither feasibility nor infeasibility. Reliable
+evidence that no allowed solution can satisfy all obligations, or that
+applicable authorities materially conflict, blocks confirmation until the
+conflict is resolved.

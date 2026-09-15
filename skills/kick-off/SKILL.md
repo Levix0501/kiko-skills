@@ -12,7 +12,7 @@ Treat outcomes as independent only when each can be approved, delivered, and evo
 
 If there is one outcome, state it briefly and continue. If there are several, name them, recommend one to focus on, and ask the user to choose.
 
-After the user chooses, run the bundled `scripts/check-kiko` with the opened project root's absolute path as its sole argument, not the current shell directory, and treat the returned path as `KIKO_ROOT`. Exit 3 means the layout is missing or incomplete: ask the user to run `/setup-kiko` at the project root, then retry. For any other nonzero exit, report the error and stop. Never initialize or repair `.kiko` yourself. Then add the unselected outcomes to `$KIKO_ROOT/TODO.md` in simple, unrefined form.
+After the user chooses, run `scripts/check-kiko` with the opened project root's absolute path as its only argument, and use the returned path as `KIKO_ROOT`. On exit 3, ask the user to run the `setup-kiko` skill at the project root, then retry. On any other nonzero exit, report the error and stop. Do not initialize or repair `.kiko`. Then add the unselected outcomes to `$KIKO_ROOT/TODO.md` in simple, unrefined form.
 
 ## Interview
 
@@ -49,7 +49,7 @@ Recommend direct implementation when the work is local, reversible, can be compl
 
 Selecting either option confirms the summary.
 
-If the user selects `create a spec`, invoke the `create-spec` skill with the confirmed summary and continue. If `create-spec` is unavailable, tell the user that the skill is not installed and cannot be invoked; do not silently substitute another spec-writing flow.
+If the user selects `create a spec` and the `create-spec` skill is unavailable, tell the user that it is not installed and cannot be invoked; do not silently substitute another spec-writing flow. Otherwise read and follow [references/handoff.md](references/handoff.md): it records the settled decisions and ends by invoking `create-spec`.
 
 If the user selects `start implementing directly`, begin implementation immediately in the current context, using the confirmed summary as the requirements record.
 

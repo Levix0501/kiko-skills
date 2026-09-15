@@ -1,34 +1,17 @@
-# Finding gate and risk acceptance
+# Finding gate
 
-Read this reference when Step 13 routes a re-review wave to the user: the wave is model-level and the round it judges was model-level too, or it holds a finding marked `not_addressed`; the choice is the user's.
+Read this reference when Step 9 routes a `Fix: DONE` result to the user: three rounds of review against an unchanged spec have each found and fixed issues, and the last round's fixes are unverified.
 
-A finding is `F<n> | critical|important|minor | breaks I<k>|uncovered|- | <self-contained finding>`. `contract-blocking:` is a finding-text prefix, not a severity. It means a current Requirement, Acceptance, Landing, or necessary Verify cannot be established; it must be Important or Critical and cannot be risk-accepted.
+Show the user the findings of every round from the latest result, with severity, and what the last round changed, so they can judge why the reviews are not converging. Ask how to proceed:
 
-The open wave is every finding the re-review defines or marks `not_addressed`. Show it complete — source, severity, attribution, full finding, contract-blocking state, and the current Notes line of every invariant it names — and offer only `Fix again`, `Accept risk`, and `Incomplete`:
+- `Fix again` → Step 8: a fresh reviewer verifies the last fixes and fixes what it finds; this gate is read again after its `Fix: DONE`.
+- `Accept risk` → record the acceptance below, then continue to Step 13.
+- `Incomplete` → Step 14.
 
-- `Fix again` opens the next round at Step 11.
-- Offer `Accept risk` only when the wave has no contract-blocking finding. It covers the complete wave unless the user names a split between accepted findings and findings to fix.
-- `Incomplete` ends the run at Step 18; it creates no decision artifact or progress record.
+If the user sees a defect in the Spec behind the churn, follow [spec-amendment.md](spec-amendment.md) with their claim in place of a result's, the latest result being the reporting result; should the spec stand, return to the choice above rather than dispatching.
 
-If the user instead determines that a finding exposes a defective spec, use that result and exact finding reference as the issue source and follow [spec-amendment.md](spec-amendment.md). This reactive route is not a fourth default option.
-
-For accepted risk, pick one fresh `<name>` and write `$IMPLEMENT_DIR/decisions/<name>.md`:
+For accepted risk, append a `[user]` decision to `$DECISIONS_FILE` per [2.5 Decisions](../SKILL.md#25-decisions): the question names the last round's findings by `F<n>` and text and states that their fixes are unverified; the answer records the user's acceptance and their reason in their words if given. Append this record to `$PROGRESS_FILE`:
 
 ```text
-# Risk Acceptance
-Source result: <absolute-re-review-result-path>
-Accepted findings:
-- <absolute-defining-result-path>#F<n>
-Risk: <specific accepted consequence>
-Reason: <user reason; omit when none was given>
+Risk acceptance — DECISION<n>
 ```
-
-Append this record to `$PROGRESS_FILE`:
-
-```text
-Phase P<n>: risk acceptance — decisions/<name>.md
-```
-
-Exact finding references close only those findings; a finding newly reported at later Heads needs a new decision. Do not copy Heads into the decision.
-
-Then route what remains: findings the acceptance leaves open go to the next round at Step 11; if it closed the whole wave, the round's obligations are met — follow Step 13's `clean` route.

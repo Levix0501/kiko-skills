@@ -1,9 +1,9 @@
 ---
 name: implement
-description: Turn a spec into reviewed, independently shippable code with adaptive phases. Use when the user asks to build a spec.
+description: Turn a spec into reviewed, shippable code. Use when the user asks to build a spec.
 ---
 
-Orchestrate implementation from a spec: the controller dispatches fresh roles (subagents) to implement, review, fix, and re-review.
+Orchestrate implementation from a spec: the controller dispatches fresh roles (subagents) to implement and review. The controller never implements, reviews, or fixes anything itself.
 
 ## 1 Workflow
 
@@ -11,39 +11,45 @@ Start with Step 1.
 
 ### Step 1: Check kiko workspace
 
-Run the bundled `scripts/check-kiko` with `$PROJECT_ROOT` — the opened project root's absolute path, not the current shell directory — as its sole argument, and treat the returned path as `$KIKO_ROOT`.
+Set `PROJECT_ROOT` to the opened project root's absolute path. Run `scripts/check-kiko` with `$PROJECT_ROOT` as its only argument, and use the returned path as `KIKO_ROOT`.
 
-- Exit 3 means the layout is missing or incomplete: ask the user to run `/setup-kiko` at the project root, then retry.
-- For any other nonzero exit, report the error and stop.
+- Exit 3: ask the user to run the `setup-kiko` skill at the project root, then retry.
+- Any other nonzero exit: report the error and stop.
 
-Never initialize or repair `.kiko` yourself. On success, continue to Step 2.
+Do not initialize or repair `.kiko`. On success, continue to Step 2.
 
 ### Step 2: Resolve spec
 
-Resolve `SPEC_FILE`, the spec's absolute path, from the first available source:
+Resolve `SPEC_DIR`, the absolute path of a spec directory directly under `$KIKO_ROOT/docs`, from the first available source:
 
-1. the path supplied by the user;
-2. the spec already selected in the current context;
+1. the path named when this skill was invoked;
+2. the spec directory this conversation is already working on;
 3. ask which spec to build.
 
 Then continue to Step 3.
 
 ### Step 3: Prepare the implementation directory
 
-Run the bundled `scripts/prepare-implement-dir` with `$KIKO_ROOT` and `$SPEC_FILE` as its arguments, and treat the returned path as `$IMPLEMENT_DIR` — [2.1 Implementation directory](#21-implementation-directory). On a nonzero exit, show the error and ask the user to fix what it names, then retry from Step 2.
+Run `scripts/prepare-implement-dir` with `$KIKO_ROOT` and `$SPEC_DIR` as its arguments, and use the returned path as `IMPLEMENT_DIR`, per [2.1 Implementation directory](#21-implementation-directory). On a nonzero exit, show the error and ask the user to fix what it names, then retry from Step 2.
 
 On success, derive:
 
 ```sh
-SPEC_NAME=$(basename "$SPEC_FILE")
-SPEC_SLUG=${SPEC_NAME%.md}
-SPEC_POINTER=".kiko/specs/$SPEC_NAME"
-NOTES_FILE="$KIKO_ROOT/notes/$SPEC_NAME"
+SPEC_SLUG=$(basename "$SPEC_DIR")
+SPEC_FILE="$SPEC_DIR/spec.md"
+FACTS_FILE="$SPEC_DIR/facts.md"
+DECISIONS_FILE="$SPEC_DIR/decisions.md"
+SPEC_POINTER=".kiko/docs/$SPEC_SLUG"
 ```
 
-- `$NOTES_FILE` — the spec's notes file, per [references/notes.md](references/notes.md).
+- `$FACTS_FILE` — the roles' `Facts`, per [references/facts.md](references/facts.md).
+- `$DECISIONS_FILE` — the decisions made so far toward the outcome, per [2.5 Decisions](#25-decisions).
 
-Then check every repository under `$PROJECT_ROOT` for uncommitted content: if any tree is not clean, show the user what you found and offer the choice — commit the content as it stands in one commit on the current branch and continue, continue after they clean it, or end the run (Step 18).
+Then check every repository at or under `$PROJECT_ROOT` for uncommitted content: the roles create the work branch from the current branch, so anything left uncommitted would end up in their work. If any tree is not clean, show the user what you found and offer the choice:
+
+- you commit it as it stands, one commit per repository on its current branch;
+- the user commits, stashes, or discards it themselves and tells you when every tree is clean;
+- the run ends (Step 14).
 
 Then continue to Step 4.
 
@@ -53,234 +59,132 @@ Then continue to Step 4.
 PROGRESS_FILE="$IMPLEMENT_DIR/progress.md"
 ```
 
-- `$PROGRESS_FILE` — [2.2 Progress file](#22-progress-file).
+`$PROGRESS_FILE` is the run's index, per [2.2 Progress file](#22-progress-file). Create it empty if it does not exist. If it is empty, continue to Step 5. If its last record is `Complete`, tell the user this spec is already built and stop. Otherwise resume: read the records and the artifacts they point to, determine which step the run reached, and continue from that step.
 
-If `$PROGRESS_FILE` does not exist, create it empty. If it is empty, continue to Step 5. Otherwise resume: read the records and the artifacts they point to, determine which step the run reached, and continue from that step.
+### Step 5: Dispatch the implementer
 
-### Step 5: Plan the next phase
-
-Read the current complete spec and the adopted artifact chain. Open work is every current requirement and acceptance item minus still-valid coverage from completed phases, plus every open finding.
-
-Plan each phase as final by default. Split off an intermediate phase only when both hold: the largest coherent subset can land in a stable, compatible, independently safe and verifiable state, and the boundary either materially isolates high risk or keeps a fresh implementation and review reliable.
-
-A phase is final exactly when its scope holds all remaining requirements, acceptance items, and open findings.
-
-Number the phase by its entry: the initial phase is P1; after an intermediate phase completes, the next phase is `P<n+1>`; a replacement scope for the still-active phase keeps its `P<n>`.
-
-Write the scope to `$IMPLEMENT_DIR/scopes/<name>.md`, in the fixed shape defined in [2.3 Scope](#23-scope). Append this record to `$PROGRESS_FILE`:
-
-```text
-Phase P<n>: scope — scopes/<name>.md
-```
-
-Then continue to Step 6.
-
-### Step 6: Dispatch the implementer
-
-Write `$IMPLEMENT_DIR/dispatch/<name>.md` — a manifest, per [2.4 Manifests](#24-manifests):
+Write `$IMPLEMENT_DIR/dispatch/<name>.md` — a manifest, per [2.3 Manifests](#23-manifests):
 
 ```text
 Role: implementer
-Action: execute
-Mode: intermediate|final
 Branch: kiko/$SPEC_SLUG
 Spec: $SPEC_FILE
-Scope: <current-scope-absolute-path>
-Notes: $NOTES_FILE
+Facts: $FACTS_FILE
 Output: $IMPLEMENT_DIR/results/<name>.md
 ```
 
-`Mode` is `final` for a final phase, otherwise `intermediate`. `Branch` is the spec's work branch: in every repository it modifies, the role works on this branch, creating it from the repository's current branch on first touch.
+`Branch` is the spec's work branch: in every repository it modifies, the role works on this branch, creating it from the repository's current branch on first touch.
 
 Append this record to `$PROGRESS_FILE`:
 
 ```text
-Phase P<n>: implement — dispatch/<name>.md
+Implement — dispatch/<name>.md
 ```
 
-Then dispatch a fresh subagent with the prompt in [2.5 Dispatch prompt](#25-dispatch-prompt); its role contract is `references/implementer.md` and its manifest is the file just written.
+Then dispatch the role per [2.4 Dispatch](#24-dispatch); its role contract is `references/implementer.md` and its manifest is the file just written.
 
-When the subagent returns, continue to Step 7.
+When the subagent returns, continue to Step 6.
 
-### Step 7: Validate the subagent return
+### Step 6: Read the subagent result
 
-An `ERROR:` return is a protocol failure: return to the dispatching step and dispatch again. One exception: an ERROR reporting a dirty or moved repository is the user's decision — show it and offer the choice: retry after they restore the repository (return to the dispatching step), or end the run (Step 18).
+Read the result at the manifest's `Output` path. If the subagent returns `ERROR:` or the result is incomplete, determine how to proceed from the cause and the work already done.
 
-Otherwise validate the Output mechanically. For every role: it sits at the manifest's `Output` path and is complete per the role's contract. For every result reporting repository modifications — an implementation or fix result, or a review+fix result (a review result with a FIX section): the reported repositories match reality — each on the manifest's `Branch` at its reported Head, Base an ancestor of Head, tree clean; a FIX repository block for a `REVIEW_TARGET` repository additionally requires `Base` equal to that target's `Head`. For a review, review+fix, or re-review result: every target repository it does not report modified is unchanged — each still on its target branch and Head with a clean tree — its finding IDs run consecutively from the manifest's `First finding ID`, every finding carries an attribution per [2.6 Attribution and level](#26-attribution-and-level), and on a final phase the coverage lists every current Requirement and Acceptance exactly once in spec order. A review result carries a FIX section exactly when it meets the reviewer contract's fix-stage trigger; any mismatch is invalid. A missing or invalid Output is a protocol failure as well: return to the dispatching step and dispatch again. A second consecutive protocol failure at the same dispatch step, and each one after it, is the user's decision — show what failed and offer the choice: retry (return to the dispatching step), or end the run (Step 18).
-
-Adopt the result — append the line matching the result's type to `$PROGRESS_FILE`, reusing the dispatch's `<name>`:
+When a complete result is available, adopt it by appending the matching line to `$PROGRESS_FILE`, reusing the dispatch's `<name>`. A review result with a `Fix` section is a review+fix result.
 
 ```text
-Phase P<n>: implementation result — results/<name>.md
-Phase P<n>: review result — results/<name>.md
-Phase P<n>: review+fix result — results/<name>.md
-Phase P<n>: fix result — results/<name>.md
-Phase P<n>: re-review result — results/<name>.md
+Implementation result — results/<name>.md
+Review result — results/<name>.md
+Review+fix result — results/<name>.md
 ```
 
-An adopted result that reports repository modifications is evidence; a review+fix result reports them through its FIX repository blocks.
+Then continue by result type: implementation → Step 7; review or review+fix → Step 9.
 
-Then continue by result type: an implementation result or a fix result → Step 8; a review or review+fix result → Step 10; a re-review result → Step 13.
+When a result reports both a spec issue and an external blocker, route by the spec issue.
 
-### Step 8: Route the write-role result
+### Step 7: Route the implementation result
 
-- `DONE` — for an implementation result, continue to Step 9; for a fix result, continue to Step 12 when the round needs a re-review per [2.7 Re-review need](#27-re-review-need), otherwise the round is closed: for an intermediate phase, continue to Step 5; for a final phase, the run is Complete: continue to Step 17. A Concern in DONE evidence is review input, not a blocker.
-- `BLOCKED` — handle only the highest-priority reported category, in this order: spec issue (Step 14), then external blocker (Step 15), then code blocker (Step 16); never route the result's lower-priority conclusions directly.
+- `DONE` → Step 8.
+- `BLOCKED` → spec issue: Step 10; external blocker: Step 11; otherwise Step 12.
 
-### Step 9: Dispatch the reviewer
+### Step 8: Dispatch the reviewer
 
-Write `$IMPLEMENT_DIR/dispatch/<name>.md` — a manifest, per [2.4 Manifests](#24-manifests):
+Write `$IMPLEMENT_DIR/dispatch/<name>.md` — a manifest, per [2.3 Manifests](#23-manifests):
 
 ```text
 Role: reviewer
-Mode: intermediate|final
 Branch: kiko/$SPEC_SLUG
 Spec: $SPEC_FILE
-Scope: <current-scope-absolute-path>
-Notes: $NOTES_FILE
+Facts: $FACTS_FILE
 Output: $IMPLEMENT_DIR/results/<name>.md
-
-Evidence sources:
-- <absolute-evidence-path>
+Prior result: <absolute-result-path>
 First finding ID: F<n>
-
-REVIEW_TARGET:
-Path: <canonical-absolute-path>
-Branch: kiko/$SPEC_SLUG
-Base: <full-sha>
-Head: <full-sha>
-END_REVIEW_TARGET
 ```
 
-`Mode` is `final` for a final phase, otherwise `intermediate`. `Evidence sources` list the current phase's adopted evidence, DONE and BLOCKED alike. `First finding ID` is one greater than the highest finding ID in any adopted review, review+fix, or re-review result, or `F1`. Repeat `REVIEW_TARGET` per repository any adopted evidence reports: `Head` is that repository's Head in the latest adopted evidence reporting it; `Base` is its Head in the last adopted evidence from before the current phase — or, where this phase touches it first, its first reporting evidence's `Base`, the work branch's starting commit.
+- `Prior result` is the latest adopted result, per [2.6 Results](#26-results): the implementation result to review, or the review result whose fixes to verify.
+- `First finding ID` is one greater than the highest finding ID in any adopted review or review+fix result, or `F1` if none.
 
 Append this record to `$PROGRESS_FILE`:
 
 ```text
-Phase P<n>: review — dispatch/<name>.md
+Review — dispatch/<name>.md
 ```
 
-Then dispatch a fresh subagent with the prompt in [2.5 Dispatch prompt](#25-dispatch-prompt); its role contract is `references/reviewer.md` and its manifest is the file just written.
+Then dispatch the role per [2.4 Dispatch](#24-dispatch); its role contract is `references/reviewer.md` and its manifest is the file just written.
 
-When the subagent returns, continue to Step 7.
+When the subagent returns, continue to Step 6.
 
-### Step 10: Route the review result
+### Step 9: Route the review result
 
-- `clean` — the phase's obligations are proven: for an intermediate phase, continue to Step 5 to plan the next phase; for a final phase, the run is Complete: continue to Step 17.
-- No FIX section, `issues` with only Minor findings on an intermediate phase — fixing defers: the phase completes and the findings carry as open findings; continue to Step 5 to plan the next phase.
-- No FIX section, a reported spec issue or external blocker — it outranks status routing: handle only the highest-priority reported category, in this order: spec issue (Step 14), then external blocker (Step 15); never route the result's lower-priority conclusions directly.
-- A FIX section with `Fix: DONE` — continue to Step 12 when the round needs a re-review per [2.7 Re-review need](#27-re-review-need), otherwise the round is closed: for an intermediate phase, continue to Step 5; for a final phase, the run is Complete: continue to Step 17.
-- A FIX section with `Fix: BLOCKED` — handle only the highest-priority category on its FIX lines, in this order: spec issue (Step 14), then external blocker (Step 15), then code blocker (Step 16); never route the result's lower-priority conclusions directly.
+- `Status: clean` → Step 13.
+- `Status: issues` without `Fix` → spec issue: Step 10; external blocker: Step 11.
+- `Fix: DONE` → Step 8, so a fresh reviewer verifies the fixes; when this is the third or a later `Fix: DONE` result since the latest `Implementation result` or `Spec amendment` record, read and follow [references/finding-gate.md](references/finding-gate.md) instead.
+- `Fix: BLOCKED` → spec issue: Step 10; external blocker: Step 11; otherwise Step 12.
 
-### Step 11: Dispatch the fixer
+### Step 10: Handle a spec issue
 
-Write `$IMPLEMENT_DIR/dispatch/<name>.md` — a manifest, per [2.4 Manifests](#24-manifests):
+Read and follow [references/spec-amendment.md](references/spec-amendment.md): whether the spec stands or was amended, it ends by dispatching a successor through the reporting result's [successor dispatch step](#successor-dispatch-step).
 
-```text
-Role: fixer
-Action: execute
-Mode: intermediate|final
-Level: code|model
-Branch: kiko/$SPEC_SLUG
-Spec: $SPEC_FILE
-Scope: <current-scope-absolute-path>
-Notes: $NOTES_FILE
-Output: $IMPLEMENT_DIR/results/<name>.md
+### Step 11: Handle an external blocker
 
-Evidence sources:
-- <absolute-evidence-path>
-Finding sources:
-- <defining-result-path>#F<n>
-```
+The reporting result names something outside the repositories that blocks progress and the user action that clears it. Show the user both and ask how to proceed.
 
-`Mode` is `final` for a final phase, otherwise `intermediate`. `Level` is the wave's level per [2.6 Attribution and level](#26-attribution-and-level). `Evidence sources` list the current phase's adopted evidence, DONE and BLOCKED alike. `Finding sources` are the round's wave: every finding the triggering result defines or marks `not_addressed`, minus findings covered by a risk acceptance.
+- Cleared — dispatch a successor through the reporting result's [successor dispatch step](#successor-dispatch-step).
+- Changed — the user drops, defers, or substitutes the blocked obligation instead.
+- Not now — continue to Step 14; the next run resumes here.
 
-Append this record to `$PROGRESS_FILE`:
+For Changed, edit the spec to say what the user decided, keeping the rules the [spec amendment draft](references/spec-amendment.md#draft-and-self-review) follows for identifiers and A coverage; append the `[user]` decision per [2.5 Decisions](#25-decisions) and a `Spec amendment — DECISION<n>` record to `$PROGRESS_FILE`, and commit the spec with the decision when tracked. Give a deferred obligation a task line in `$KIKO_ROOT/TODO.md`. Then dispatch a successor as for Cleared.
 
-```text
-Phase P<n>: fix — dispatch/<name>.md
-```
+### Step 12: Handle a blocked attempt
 
-Then dispatch a fresh subagent with the prompt in [2.5 Dispatch prompt](#25-dispatch-prompt); its role contract is `references/fixer.md` and its manifest is the file just written.
+The role stopped short with neither a spec issue nor an external blocker; its `Remaining` says what stopped it, what was tried, and what is needed. Dispatch one successor through the reporting result's [successor dispatch step](#successor-dispatch-step): a fresh attempt holding that record either finishes or stops short again.
 
-When the subagent returns, continue to Step 7.
+If the successor also stops short, show the user its `Remaining` and ask how to proceed.
 
-### Step 12: Dispatch the re-reviewer
+- Continue — dispatch another successor, after the user acts on what is needed if they can.
+- Changed — the user drops, defers, or substitutes the obligation instead: proceed as for Changed in Step 11.
+- Not now — continue to Step 14; the next run resumes here.
 
-Write `$IMPLEMENT_DIR/dispatch/<name>.md` — a manifest, per [2.4 Manifests](#24-manifests):
+### Step 13: Complete
 
-```text
-Role: re-reviewer
-Mode: intermediate|final
-Spec: $SPEC_FILE
-Scope: <current-scope-absolute-path>
-Notes: $NOTES_FILE
-Output: $IMPLEMENT_DIR/results/<name>.md
+Ask the user how to land the work in every repository the run touched, the ones in the latest adopted result's repository blocks:
 
-Evidence sources:
-- <absolute-evidence-path>
-Finding sources:
-- <defining-result-path>#F<n>
-First finding ID: F<n>
+- you merge `kiko/$SPEC_SLUG` into the branch it was created from — its `Created from`, or the branch the user names where no result records it — and delete it;
+- you push the branch for the user to open a pull request;
+- the branch stays as it is.
 
-REREVIEW_TARGET:
-Path: <canonical-absolute-path>
-Branch: kiko/$SPEC_SLUG
-Base: <full-sha>
-Reviewed head: <full-sha>
-Head: <full-sha>
-END_REREVIEW_TARGET
-```
+Do as they choose.
 
-`Mode` is `final` for a final phase, otherwise `intermediate`. `Evidence sources` list the current phase's adopted evidence, DONE and BLOCKED alike. `Finding sources` are the round's wave, per Step 11's definition; `Base` and `First finding ID` follow Step 9's rules. Repeat `REREVIEW_TARGET` per repository any adopted evidence reports: `Reviewed head` is that repository's Head in the triggering result's manifest, or equal to `Base` where this round touches it first; `Head` is its Head in the latest adopted evidence reporting it. `Base..Reviewed head` is already reviewed; `Reviewed head..Head` is the fix delta.
+Tidy `$KIKO_ROOT/TODO.md`: delete the tasks this run completed, and add one task line per Concern in adopted implementation results that names a decision the user has not made.
 
-Append this record to `$PROGRESS_FILE`:
-
-```text
-Phase P<n>: re-review — dispatch/<name>.md
-```
-
-Then dispatch a fresh subagent with the prompt in [2.5 Dispatch prompt](#25-dispatch-prompt); its role contract is `references/re-reviewer.md` and its manifest is the file just written.
-
-When the subagent returns, continue to Step 7.
-
-### Step 13: Route the re-review result
-
-- `clean` — the fix round resolved its wave: for an intermediate phase, continue to Step 5 to plan the next phase; for a final phase, the run is Complete: continue to Step 17.
-- `issues` with only residual or new Minor findings on an intermediate phase — fixing defers: the phase completes and the findings carry as open findings; continue to Step 5 to plan the next phase.
-- `issues` otherwise — the wave is every finding the re-review defines or marks `not_addressed`. If the wave is model-level per [2.6 Attribution and level](#26-attribution-and-level) and the round it judges was model-level too — its fixer manifest carried `Level: model`, or it was a review+fix whose findings included `uncovered` — or the wave holds a finding the re-review marks `not_addressed`, put the choice to the user: read and follow [references/finding-gate.md](references/finding-gate.md); it ends by opening the next fix round at Step 11, following this step's `clean` route after a full risk acceptance, routing a spec issue through Step 14, or ending the run at Step 18. Otherwise open the next fix round at Step 11.
-- A reported spec issue or external blocker outranks status routing — handle only the highest-priority reported category, in this order: spec issue (Step 14), then external blocker (Step 15); never route the result's lower-priority conclusions directly.
-
-### Step 14: Handle a spec issue
-
-Any role may report a contradiction in the current spec, a false premise in it or in the notes it relies on, an acceptance rule that cannot determine correctness, or a state the landing must handle on which the spec is silent. Pause product implementation; the reporting result is the issue source. Read and follow [references/spec-amendment.md](references/spec-amendment.md): it ends either by dispatching a successor through the reporting result's [successor dispatch step](#successor-dispatch-step), or by adopting an amendment and continuing to Step 5.
-
-### Step 15: Handle an external blocker
-
-The reporting result names something outside the repositories that blocks progress and the user action that clears it. Show the user both and ask whether they will act now.
-
-- Cleared — dispatch a successor through the reporting result's [successor dispatch step](#successor-dispatch-step) with [the successor fields](#successor-fields): `Prior result` names the reporting result; a write-role successor whose remaining work is only external verification takes `Action: evidence-recovery` with `Recovery evidence` naming the same result.
-- Not now — if open work the blocker does not reach remains, continue to Step 5: write a replacement scope for the still-active phase from that work; the blocked items stay open for a later phase. Otherwise continue to Step 18.
-
-### Step 16: Handle a code blocker
-
-The reporting role hit a technical obstacle it could not clear; its result records the partial state and a concrete next step. Dispatch one successor through the reporting result's [successor dispatch step](#successor-dispatch-step) with [the successor fields](#successor-fields): `Prior result` names the blocked result. A fresh attempt holding the predecessor's recorded state and next step either clears the obstacle or confirms it.
-
-If the successor's result reports the same obstacle, it is confirmed: show the user the obstacle and the reported next step, and offer the choice — if open work the obstacle does not reach remains, park it and continue to Step 5 (a replacement scope for the still-active phase; the blocked items stay open), or end the run (Step 18). A different code blocker is a fresh report where the successor advanced any Head: handle it from the top of this step; with no Head advanced, it is confirmed as well.
-
-### Step 17: Complete
-
-Ask the user how to land the work: in every repository the run touched, merge `kiko/$SPEC_SLUG` into the branch it was created from — its first reporting evidence's `Created from`, or the branch the user names where no adopted evidence records it — and delete it, or keep the branch as is. Do as they choose.
-
-Tidy `$KIKO_ROOT/TODO.md`: delete the tasks this run completed, and add one task line per Concern in adopted DONE evidence that names a decision the user has not made.
+Append `Complete` to `$PROGRESS_FILE`.
 
 Report Complete to the user: only the key outcomes, brief and to the point. The run ends here.
 
-### Step 18: Incomplete
+### Step 14: Incomplete
 
 The run stops before every obligation is proven.
 
-Tidy `$KIKO_ROOT/TODO.md`: leave this spec exactly one task line — `- <unfinished goal> — next: <user action> — resume: /implement $SPEC_POINTER`; if the user abandoned the objective, delete its tasks instead. Revert nothing.
+Tidy `$KIKO_ROOT/TODO.md`: leave this spec exactly one resume line — `- <unfinished goal> — next: <user action> — resume: implement $SPEC_POINTER` — and keep its other task lines; if the user abandoned the objective, delete its tasks instead. Revert nothing.
 
 Report Incomplete to the user: the cause, the next action, and the work branch holding the partial work — brief and to the point. The run ends here.
 
@@ -288,93 +192,49 @@ Report Incomplete to the user: the cause, the next action, and the work branch h
 
 ### 2.1 Implementation directory
 
-The implementation directory (`$IMPLEMENT_DIR`) is one spec's durable state. It contains only:
+The implementation directory (`$IMPLEMENT_DIR`) is one spec's run state: it persists across invocations and is not committed. It contains only:
 
 ```text
 progress.md
-scopes/
 dispatch/
 results/
-decisions/
 ```
 
-Files in the subdirectories are immutable: never edit or overwrite one — supersede it with a new file. Basenames are random, generated with `openssl rand -hex 4`; paired files share one `<name>` — a result with its dispatch, an amendment proposal (`<name>-spec.md`) with its decision.
+Files in the subdirectories are immutable: never edit or overwrite one — supersede it with a new file. Basenames are random, such as `openssl rand -hex 4` gives; a result shares its dispatch's `<name>`.
 
 ### 2.2 Progress file
 
-The progress file (`$PROGRESS_FILE`) is an append-only index: each record continues the one before it, and a dispatch record stands even when no result for it is ever adopted. The file contains only these records:
+The progress file (`$PROGRESS_FILE`) is an append-only index in order: the last record is where the run stands, and a dispatch record stands even when no result for it is ever adopted. The file contains only these records:
 
 ```text
-Phase P<n>: scope — scopes/<name>.md
-Phase P<n>: implement — dispatch/<name>.md
-Phase P<n>: implementation result — results/<name>.md
-Phase P<n>: review — dispatch/<name>.md
-Phase P<n>: review result — results/<name>.md
-Phase P<n>: review+fix result — results/<name>.md
-Phase P<n>: fix — dispatch/<name>.md
-Phase P<n>: fix result — results/<name>.md
-Phase P<n>: re-review — dispatch/<name>.md
-Phase P<n>: re-review result — results/<name>.md
-Phase P<n>: risk acceptance — decisions/<name>.md
-Spec amendment — decisions/<name>.md
+Implement — dispatch/<name>.md
+Implementation result — results/<name>.md
+Review — dispatch/<name>.md
+Review result — results/<name>.md
+Review+fix result — results/<name>.md
+Risk acceptance — DECISION<n>
+Spec amendment — DECISION<n>
+Complete
 ```
 
-`<name>` is the artifact file's random basename. These letters appear here and throughout the skill:
+### 2.3 Manifests
 
-- `P<n>` — phase number; increments when planning the next phase after the current one completes.
-- `F<n>` — finding ID, unique across the run; increments with each new finding a review, review+fix, or re-review result defines. A finding's severity is fixed by its defining line.
+A manifest is one dispatch's complete, immutable task statement — everything the role receives beyond its role contract.
 
-### 2.3 Scope
-
-A scope is one phase's task statement. It has this fixed shape:
-
-```md
-# P<n> — <observable outcome>
-
-## Requirements
-
-- <R IDs or exact requirement names, or (none)>
-
-## Acceptance
-
-- <A IDs or exact criterion names, or (none)>
-
-## Open findings
-
-- <absolute-result-path>#F<n>, or (none)
-
-## Landing
-
-<stable, compatible state that must hold when this phase ends>
-
-## Verify
-
-<behaviors and integration results that must be proven>
-```
-
-Use only IDs when the spec supplies them; otherwise use exact names. `Landing` states the stable stop boundary and `Verify` states required proof without prescribing commands. The scope contains only the five sections above.
-
-For a final phase, list every remaining R/A and finding explicitly; when open work is the complete current spec, write `the complete current spec` in Requirements and Acceptance instead. Its `Landing` covers the integrated product state and `Verify` includes phase-specific plus whole-spec integration/regression proof. Final review always covers the current whole spec.
-
-### 2.4 Manifests
-
-A manifest is one dispatch's complete, immutable task statement — everything the fresh role receives beyond its role contract.
-
-#### Successor fields
+#### Prior result
 
 ```text
 Prior result: <absolute-result-path>
 Prior disposition: spec-issue-rejected
-Recovery evidence: <absolute-evidence-path>
 ```
 
-Any manifest may append these. `Prior result` names the result this successor continues — after a code blocker, an external blocker, or a rejected spec issue; only the last adds the fixed `Prior disposition` line. A write role carries `Recovery evidence` exactly when `Action` is `evidence-recovery`.
+`Prior result` names the latest adopted result, the one the role starts from per [2.6 Results](#26-results). Every reviewer manifest carries it; an implementer manifest carries it as a successor after a blocked attempt, an external blocker, or a spec issue, whether rejected or adopted as an amendment. Only the rejected case adds the fixed `Prior disposition` line.
 
 #### Successor dispatch step
 
-A successor is dispatched through the step matching the reported result's type: an implementation result through Step 6, a review result through Step 9, a fix or review+fix result through Step 11, and a re-review result through Step 12.
+A successor is dispatched through the step matching the reported result's type: an implementation result through Step 5, a review or review+fix result through Step 8.
 
-### 2.5 Dispatch prompt
+### 2.4 Dispatch
 
 Dispatch every role as a fresh subagent with exactly this prompt:
 
@@ -389,18 +249,21 @@ Write the result to the manifest's Output path.
 Return only `RESULT: <path>`, or `ERROR: <reason>` if the manifest cannot be safely executed or a complete result cannot be written.
 ```
 
-### 2.6 Attribution and level
+One exception. A successor after a spec issue or an external blocker whose role matches the subagent that wrote its `Prior result` continues that subagent, sending it the same prompt with the new manifest, when the harness can resume a returned subagent with its context intact — in Claude Code, a message to the agent by name. When it cannot, or that subagent no longer exists, dispatch a fresh subagent. A successor after a blocked attempt is always a fresh subagent.
 
-Every finding names the invariant it concerns:
+### 2.5 Decisions
 
-- `breaks I<k>` — the recorded invariant is right and the code fails to hold it;
-- `uncovered` — no recorded invariant covers the failing state, including an invariant the supplied wave already broke and the fix held as recorded;
-- `-` — no behavior is at stake: a standards or hygiene defect, always Minor.
+`$DECISIONS_FILE` holds one entry per decision made toward the outcome. The entries before this run were written while the spec was formed; during the run only the controller appends, on a spec amendment or a risk acceptance, and commits what it appended when the spec directory is tracked in Git: the write roles refuse a dirty tree. Append-only, never edited or deleted; a changed decision is a new entry that says which ID it supersedes. Numbers in `DECISION<n>` increase and are never reused.
 
-A wave is model-level when any finding in it is `uncovered`, otherwise code-level. A code-level wave is fixed in the code. A model-level wave is fixed by first appending the revised or new invariant to Notes, then making the code hold it.
+```md
+- DECISION<n> [user] <question>
+  <answer>
+- DECISION<n> [controller] <question>
+  <answer>
+```
 
-A false recorded premise, and a state the landing must handle on which the spec is silent, are spec issues (Step 14), not findings.
+`[user]` records the user's decision, in their words where given; `[controller]` records a decision the controller made itself. The facts a decision rests on are appended to `$FACTS_FILE`, `verified` for what the controller established and `user` for what the user supplied, and named in the answer. Question and answer together have one reading for someone with no run history. Name the R, D, A, or O concerned, and quote a finding rather than only citing `F<n>`: `.implement/` is not committed, so the finding cannot be looked up later. No role receives this file.
 
-### 2.7 Re-review need
+### 2.6 Results
 
-A fix round is a review+fix result with `Fix: DONE` or a fix result with `Status: DONE`. Its wave is every finding the round resolved: for a review+fix result, the findings the review defines plus the carried findings it marks `not_addressed`; for a fix result, its manifest's `Finding sources`. The round needs a re-review unless every finding in the wave is attributed `-` and, for every repository the result reports modified, the bundled `scripts/check-text-only` with the repository path, `Base`, and `Head` as its arguments exits 0. A round that needs no re-review is closed: its findings are not open work and receive no verdict.
+Results are cumulative: a role reads only its `Prior result`, and the controller takes repository state from the latest adopted result. Every result carries forward the repository blocks of its `Prior result` — every repository on the work branch, with `Base` the commit the branch was created from, `Created from` where recorded, and `Head` updated to the current commit — and adds any repository this dispatch first touched. A review result also carries forward the findings its `Prior result` lists. Everything else in a result is that dispatch's own report.
