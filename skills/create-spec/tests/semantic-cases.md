@@ -17,6 +17,7 @@ giving each input to a fresh `create-spec` context and checking the result.
 | A contract-critical term lacks one unambiguous ordinary meaning | Define it in the Glossary; the definition adds no obligation |
 | O conflicts with R, D, or A | Reject the draft |
 | Content is clearly factual, procedural, or transient | Omit it |
+| A decisions entry describes pushing, deploying, or what must hold only afterwards | Write no R, D, A, or O from it; it stays in decisions.md for the user's release |
 | Omission might discard a user obligation | Return the ambiguity |
 | An unsupported premise would change contract wording | Use premise-independent wording or return the uncertainty |
 | R lacks feasibility proof and reliable counterevidence | Allow the contract without claiming proven feasibility |

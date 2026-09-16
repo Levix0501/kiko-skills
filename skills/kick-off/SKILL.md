@@ -4,15 +4,21 @@ description: A relentless interview that turns an unclear request into a shared,
 disable-model-invocation: true
 ---
 
+## Workspace
+
+Run `scripts/check-kiko` with the opened project root's absolute path as its only argument, and use the returned path as `KIKO_ROOT`. On exit 3, ask the user to run the `setup-kiko` skill at the project root, then retry. On any other nonzero exit, report the error and stop. Do not initialize or repair `.kiko`, and suggest no substitute for `setup-kiko`.
+
 ## Objective
 
 Before detailed design questions, determine whether the request is one coherent outcome or several independent outcomes.
 
 Treat outcomes as independent only when each can be approved, delivered, and evolved without the others.
 
+An outcome ends at the repositories: how the work is then pushed or deployed is the user's own release, not a decision to settle here.
+
 If there is one outcome, state it briefly and continue. If there are several, name them, recommend one to focus on, and ask the user to choose.
 
-After the user chooses, run `scripts/check-kiko` with the opened project root's absolute path as its only argument, and use the returned path as `KIKO_ROOT`. On exit 3, ask the user to run the `setup-kiko` skill at the project root, then retry. On any other nonzero exit, report the error and stop. Do not initialize or repair `.kiko`. Then add the unselected outcomes to `$KIKO_ROOT/TODO.md` in simple, unrefined form.
+After the user chooses, add the unselected outcomes to `$KIKO_ROOT/TODO.md` in simple, unrefined form.
 
 ## Interview
 

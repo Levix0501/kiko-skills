@@ -36,10 +36,10 @@ The draft is ready only when every statement below is true:
    readiness passed the evidence gate within the scope in which it was used,
    and is recorded in the facts file with its source and the R/D it bears on.
    Facts and evidence are absent from the spec.
-9. **Readiness:** the spec contains only contract semantics, and material
-   ambiguity was returned rather than silently omitted. No known material
-   conflict remains, and neither feasibility nor infeasibility is claimed
-   without evidence.
+9. **Readiness:** the spec contains only contract semantics, none of them
+   observable only after a push or deployment, and material ambiguity was
+   returned rather than silently omitted. No known material conflict remains,
+   and neither feasibility nor infeasibility is claimed without evidence.
 10. **Fresh context:** read with no conversation history and with the Goal
     removed, the spec and independently applicable authorities suffice to
     determine the required delivery, binding internal choices, conformance

@@ -12,6 +12,8 @@ Require every input to exist and Output not to exist. A malformed manifest, miss
 
 Read the current Spec and use it as the contract. Read Facts per [facts.md](facts.md) and append to it as that file allows.
 
+Before changing anything, check that this session can observe every acceptance item once it is built: the equipment, services, access, data, and test setup its scenario needs. An item it cannot observe is an external blocker to report now, before any implementation, rather than after the work is done.
+
 Use the repositories' current state as the starting point: a predecessor may have landed part of the work. Implement every requirement within the Spec's design decisions and satisfy every acceptance item end to end. Preserve compatibility unless the Spec changes it, leave no unsafe stub or half-migration, follow each repository's instructions, and keep R/D/A/O, FACT<n>, and F<n> identifiers out of product code, comments, and tests.
 
 Modify only the repositories the Spec requires, Facts, and Output; leave the Spec, manifest, and prior artifacts unchanged. In every repository you modify, work on the manifest's `Branch`, creating it from the repository's current branch on first touch. Before modifying a repository, require its tree clean. A dirty tree before you modify any repository is `ERROR: dirty repository: <path>`: do not create Output; after that, a dirty tree you cannot clear stops the work: report it as BLOCKED.

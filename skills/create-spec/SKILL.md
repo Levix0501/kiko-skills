@@ -57,8 +57,9 @@ only after this preflight passes.
 ## 4. Review with the user
 
 Present the written file as the exact review target, list every D or state
-that there are none, show the decisions entries added since the input, and
-ask the user to confirm or revise the document.
+that there are none, show the decisions entries added since the input, name
+the entries the delivery boundary left to the user's release, and ask the
+user to confirm or revise the document.
 
 Treat a revision like the first draft: classify, gate, and self-review what
 changed, then ask again.

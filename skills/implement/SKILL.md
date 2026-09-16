@@ -45,11 +45,13 @@ SPEC_POINTER=".kiko/docs/$SPEC_SLUG"
 - `$FACTS_FILE` — the roles' `Facts`, per [references/facts.md](references/facts.md).
 - `$DECISIONS_FILE` — the decisions made so far toward the outcome, per [2.5 Decisions](#25-decisions).
 
-Then check every repository at or under `$PROJECT_ROOT` for uncommitted content: the roles create the work branch from the current branch, so anything left uncommitted would end up in their work. If any tree is not clean, show the user what you found and offer the choice:
+Then check every repository at or under `$PROJECT_ROOT` for uncommitted content: the roles create the work branch from the current branch, so anything left uncommitted would end up in their work. If any tree is not clean, show the user what you found right away, before looking into anything else, and offer the choice:
 
 - you commit it as it stands, one commit per repository on its current branch;
 - the user commits, stashes, or discards it themselves and tells you when every tree is clean;
 - the run ends (Step 14).
+
+Then show the user, for each repository, the branch the work branch will be created from, its head, and how far it is ahead of or behind its upstream: reviewers see only `Base..Head`, so nothing later revisits where `Base` came from.
 
 Then continue to Step 4.
 
@@ -137,7 +139,8 @@ When the subagent returns, continue to Step 6.
 
 - `Status: clean` → Step 13.
 - `Status: issues` without `Fix` → spec issue: Step 10; external blocker: Step 11.
-- `Fix: DONE` → Step 8, so a fresh reviewer verifies the fixes; when this is the third or a later `Fix: DONE` result since the latest `Implementation result` or `Spec amendment` record, read and follow [references/finding-gate.md](references/finding-gate.md) instead.
+- `Fix: DONE` whose fixes changed no behavior → Step 13. The fixes changed no behavior when, for every repository the result lists, the bundled `scripts/check-text-only` with the repository path, the `Head` its `Prior result` records for it (its `Base` when the prior result does not list it), and its `Head` exits 0.
+- Any other `Fix: DONE` → Step 8, so a fresh reviewer verifies the fixes; when this is the third or a later `Fix: DONE` result since the latest `Implementation result` or `Spec amendment` record, read and follow [references/finding-gate.md](references/finding-gate.md) instead.
 - `Fix: BLOCKED` → spec issue: Step 10; external blocker: Step 11; otherwise Step 12.
 
 ### Step 10: Handle a spec issue

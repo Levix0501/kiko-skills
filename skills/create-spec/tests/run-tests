@@ -74,6 +74,7 @@ t05_template_keeps_identifier_interface() {
 t06_rules_have_one_canonical_structure() {
   actual=$(grep '^## ' "$RULES")
   expected='## Authority
+## Delivery boundary
 ## R: normative requirement
 ## D: binding design decision
 ## A: observable acceptance

@@ -18,6 +18,16 @@ independently. Do not copy them into the spec merely for self-containment. If
 these authorities and the settled input imply different contract results,
 return the conflict instead of choosing between them.
 
+## Delivery boundary
+
+The delivery is the work committed and verified in the repositories; the
+spec's obligations end there. Pushing, deploying, and whatever can be
+observed only after that are the user's release, outside the spec. A
+decisions entry about the release grounds no R, D, A, or O and stays in
+`decisions.md` for the user. An R observable only after a push or deployment
+is not admitted; an R with both a local and a remote observation keeps the
+local one.
+
 ## R: normative requirement
 
 Ask:
