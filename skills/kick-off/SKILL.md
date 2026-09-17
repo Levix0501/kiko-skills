@@ -10,15 +10,15 @@ Run `scripts/check-kiko` with the opened project root's absolute path as its onl
 
 ## Objective
 
-Before detailed design questions, determine whether the request is one coherent outcome or several independent outcomes.
-
-Treat outcomes as independent only when each can be approved, delivered, and evolved without the others.
+Take the request the user brings, which may be empty, together with what is waiting in `$KIKO_ROOT/TODO.md` as one whole, and cut it vertically into outcomes that are each verifiable on their own: a narrow but complete path through every layer it touches, never one layer of the whole. Give each outcome the outcomes without which it cannot be delivered and accepted, and no others: importance never overrides an edge.
 
 An outcome ends at the repositories: how the work is then pushed or deployed is the user's own release, not a decision to settle here.
 
-If there is one outcome, state it briefly and continue. If there are several, name them, recommend one to focus on, and ask the user to choose.
+Importance is the mark an outcome carries: `[P0]` for what must ship for the work to count, `[P1]` for what must follow, `[P2]` for what can wait. An outcome inherits the highest mark among the outcomes it blocks. Propose a mark for every outcome that has none.
 
-After the user chooses, add the unselected outcomes to `$KIKO_ROOT/TODO.md` in simple, unrefined form.
+Show the user the outcomes, each with an id and its mark, and the edges between them, concisely; then pick what to build next: one or more outcomes, each blocked by nothing outside the pick, the most important first, as long as together they still read as one outcome, a single fresh context can build them, and another can verify them in full. Ask whether the cut and the pick suit; the user may adjust either.
+
+Once the user confirms, rewrite `$KIKO_ROOT/TODO.md` as the remaining outcomes, each on a line of its own with its id and mark, keeping the user's own constraints and whatever was already noted on it; below them the edges, an arrow from each outcome to what waits on it. From here on the work is what the user picked, and the interview covers only it.
 
 ## Interview
 

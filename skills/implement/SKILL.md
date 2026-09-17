@@ -39,7 +39,6 @@ SPEC_SLUG=$(basename "$SPEC_DIR")
 SPEC_FILE="$SPEC_DIR/spec.md"
 FACTS_FILE="$SPEC_DIR/facts.md"
 DECISIONS_FILE="$SPEC_DIR/decisions.md"
-SPEC_POINTER=".kiko/docs/$SPEC_SLUG"
 ```
 
 - `$FACTS_FILE` — the roles' `Facts`, per [references/facts.md](references/facts.md).
@@ -177,19 +176,15 @@ Ask the user how to land the work in every repository the run touched, the ones 
 
 Do as they choose.
 
-Tidy `$KIKO_ROOT/TODO.md`: delete the tasks this run completed, and add one task line per Concern in adopted implementation results that names a decision the user has not made.
-
 Append `Complete` to `$PROGRESS_FILE`.
 
-Report Complete to the user: only the key outcomes, brief and to the point. The run ends here.
+Report Complete to the user: the key outcomes and every Concern in adopted implementation results that names a decision the user has not made, brief and to the point. The run ends here.
 
 ### Step 14: Incomplete
 
-The run stops before every obligation is proven.
+The run stops before every obligation is proven. Revert nothing.
 
-Tidy `$KIKO_ROOT/TODO.md`: leave this spec exactly one resume line — `- <unfinished goal> — next: <user action> — resume: implement $SPEC_POINTER` — and keep its other task lines; if the user abandoned the objective, delete its tasks instead. Revert nothing.
-
-Report Incomplete to the user: the cause, the next action, and the work branch holding the partial work — brief and to the point. The run ends here.
+Report Incomplete to the user: the cause, the next action, the work branch holding the partial work, and that a later run on the same spec resumes from here — brief and to the point. The run ends here.
 
 ## 2 Concepts
 

@@ -332,7 +332,7 @@ t12_skill_supporting_paths_exist() {
 t13_facts_reference_describes_spec_dir_file() {
   contains "$SKILL" 'SPEC_FILE="$SPEC_DIR/spec.md"' &&
     contains "$SKILL" 'FACTS_FILE="$SPEC_DIR/facts.md"' &&
-    contains "$SKILL" 'SPEC_POINTER=".kiko/docs/$SPEC_SLUG"' &&
+    not_contains "$SKILL" 'SPEC_POINTER' &&
     not_contains "$SKILL" 'INVARIANTS_FILE' &&
     contains "$SKILL" 'DECISIONS_FILE="$SPEC_DIR/decisions.md"' &&
     contains "$SKILL" 'No role receives this file' &&
