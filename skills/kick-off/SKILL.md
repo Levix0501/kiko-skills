@@ -18,7 +18,25 @@ Importance is the mark an outcome carries: `[P0]` for what must ship for the wor
 
 Show the user the outcomes, each with an id and its mark, and the edges between them, concisely; then pick what to build next: one or more outcomes, each blocked by nothing outside the pick, the most important first, as long as together they still read as one outcome, a single fresh context can build them, and another can verify them in full. Ask whether the cut and the pick suit, and nothing else alongside: the user may adjust either, and a question about the work would rest on a pick that may still change.
 
-Once the user confirms, rewrite `$KIKO_ROOT/TODO.md` as the outcomes not picked, each on a line of its own with its id and mark; below them the edges among those outcomes, an arrow from each to what waits on it; nothing else. From here on the work is what the user picked, and the interview covers only it.
+Once the user confirms, rewrite `$KIKO_ROOT/TODO.md` as the outcomes not picked and the edges among them, in this shape and nothing else:
+
+```md
+# TODO
+
+## Outcomes
+
+- <id> [P0] <outcome>
+- <id> [P1] <outcome>
+- <id> [P2] <outcome>
+
+## Dependencies
+
+<id> → <id> → <id>
+<id> → <id>
+<id>
+```
+
+One chain per line, an arrow from an outcome to what waits on it; a branch starts a new line at the outcome it leaves, and an outcome on no chain stands on a line of its own. Ids are the ones the user saw. From here on the work is what the user picked, and the interview covers only it.
 
 ## Interview
 
