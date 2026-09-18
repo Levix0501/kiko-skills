@@ -1,6 +1,6 @@
 ---
 name: kick-off
-description: A relentless interview that turns an unclear request into a shared, actionable understanding.
+description: Cut the request into outcomes, pick what to build next, and interview until every decision about it is settled.
 disable-model-invocation: true
 ---
 
@@ -8,15 +8,13 @@ disable-model-invocation: true
 
 Run `scripts/check-kiko` with the opened project root's absolute path as its only argument, and use the returned path as `KIKO_ROOT`. On exit 3, ask the user to run the `setup-kiko` skill at the project root, then retry. On any other nonzero exit, report the error and stop. Do not initialize or repair `.kiko`, and suggest no substitute for `setup-kiko`.
 
-## Objective
+## Cut and pick
 
-Take the request the user brings, which may be empty, together with what is waiting in `$KIKO_ROOT/TODO.md` as one whole, and cut it vertically into outcomes that are each verifiable on their own: a narrow but complete path through every layer it touches, never one layer of the whole. Give each outcome the outcomes without which it cannot be delivered and accepted, and no others: importance never overrides an edge.
+Take the request the user brings, which may be empty, together with what is waiting in `$KIKO_ROOT/TODO.md` as one whole, and cut it vertically into outcomes that are each verifiable on their own: a narrow but complete path through every layer it touches, never one layer of the whole. An outcome waits on the outcomes without which it cannot be delivered and accepted, and on no others; importance never overrides a dependency.
 
-Importance is the mark an outcome carries: `[P0]` for what must ship for the work to count, `[P1]` for what must follow, `[P2]` for what can wait. An outcome inherits the highest mark among the outcomes it blocks. Propose a mark for every outcome that has none.
+Importance is the mark an outcome carries: `[P0]` for what must ship for the work to count, `[P1]` for what must follow, `[P2]` for what can wait. An outcome inherits the highest mark among the outcomes that wait on it. Propose a mark for every outcome that has none.
 
-Show the user the outcomes, each with an id and its mark, and the edges between them, concisely; then pick what to build next: one or more outcomes, each blocked by nothing outside the pick, the most important first, as long as together they still read as one outcome, a single fresh context can build them, and another can verify them in full. Ask whether the cut and the pick suit, and nothing else alongside: the user may adjust either, and a question about the work would rest on a pick that may still change.
-
-Once the user confirms, rewrite `$KIKO_ROOT/TODO.md` as the outcomes not picked and the edges among them, in this shape and nothing else:
+Show the user the outcomes in the shape `$KIKO_ROOT/TODO.md` takes:
 
 ```md
 # TODO
@@ -34,7 +32,11 @@ Once the user confirms, rewrite `$KIKO_ROOT/TODO.md` as the outcomes not picked 
 <id>
 ```
 
-One chain per line, an arrow from an outcome to what waits on it; a branch starts a new line at the outcome it leaves, and an outcome on no chain stands on a line of its own. Ids are the ones the user saw. From here on the work is what the user picked, and the interview covers only it.
+One chain per line, an arrow from an outcome to what waits on it; an outcome on more than one chain appears on each of them, and an outcome on no chain stands on a line of its own.
+
+Then pick what to build next: one or more outcomes, none waiting on anything outside the pick, the most important first, as long as together they still read as one outcome, a single fresh context can build them, and another can verify them in full. Ask whether the cut and the pick suit, and nothing else alongside: the user may adjust either, and a question about the work would rest on a pick that may still change.
+
+Once the user confirms, rewrite `$KIKO_ROOT/TODO.md` as the outcomes not picked, in the same shape with the ids the user saw, and nothing else. From here on the outcome is what the user picked, and the interview covers only it.
 
 ## Interview
 
@@ -71,7 +73,7 @@ Recommend direct implementation when the work is local, reversible, can be compl
 
 Selecting either option confirms the summary.
 
-If the user selects `create a spec` and the `create-spec` skill is unavailable, tell the user that it is not installed and cannot be invoked; do not silently substitute another spec-writing flow. Otherwise read and follow [references/handoff.md](references/handoff.md): it records the settled decisions and ends by invoking `create-spec`.
+If the user selects `create a spec` and the `create-spec` skill is unavailable, tell the user that it is not installed and cannot be invoked; do not silently substitute another spec-writing flow. Otherwise read and follow [references/records.md](references/records.md): it records the decisions and facts, then invokes `create-spec`.
 
 If the user selects `start implementing directly`, begin implementation immediately in the current context, using the confirmed summary as the requirements record.
 

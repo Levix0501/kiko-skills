@@ -1,4 +1,4 @@
-# Handoff to create-spec
+# Decisions and facts
 
 Set `SLUG` to `YYYY-MM-DD-<topic>`: today's date and a kebab-case topic
 taken from the outcome. Pick another topic if `$KIKO_ROOT/docs/$SLUG`
@@ -21,11 +21,12 @@ says which ID it supersedes.
 
 Numbers in `DECISION<n>` increase and are never reused; `[user]` marks the
 user as the decider. An entry exists only for a decision the user actually
-made; a choice the user left open is an entry whose answer says so. Question and answer together have one reading for someone with no
+made; a choice the user left open is an entry whose answer says so. A
+requirement the user imposes and a risk they accept are decisions too.
+Question and answer together have one reading for someone with no
 conversation history. The user's reason, when given, stays in their words.
 
-Write one entry per settled decision. Do not add what the user did not
-confirm.
+Write one entry per settled decision.
 
 ## facts.md
 
@@ -45,12 +46,10 @@ recorded.
 
 Write one line per fact the user supplied.
 
-## Confirm, commit, hand off
+## Commit and continue
 
-Show the user both files and ask whether they are faithful. A changed mind
-is a new entry that says which ID it supersedes.
+These files transcribe the summary the user confirmed, and the spec is what
+they review next, so ask for no confirmation here.
 
 If the directory is in a Git working tree, commit it and report the SHA.
-
-Invoke the `create-spec` skill with `$KIKO_ROOT/docs/$SLUG`. From here the
-files are the settled input; the conversation is not.
+Then invoke the `create-spec` skill with `$KIKO_ROOT/docs/$SLUG`.
