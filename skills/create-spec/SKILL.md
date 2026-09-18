@@ -1,9 +1,9 @@
 ---
 name: create-spec
-description: Turn a settled outcome into a build-ready spec a fresh context can implement and verify. Use when the user asks to create a spec.
+description: Turn the design into a build-ready spec a fresh context can implement and verify. Use when the user asks to create a spec.
 ---
 
-`create-spec` turns the settled input into a build-ready spec — the delivery
+`create-spec` turns the design into a build-ready spec — the delivery
 contract a fresh context can implement and verify.
 
 ## 1. Locate the spec directory
@@ -20,11 +20,10 @@ Do not initialize or repair `.kiko`.
 `SPEC_DIR` is the spec directory named when this skill was invoked, directly
 under `$KIKO_ROOT/docs`; ask for it when none was named. It holds
 `decisions.md`, the decisions made so far toward the outcome, and `facts.md`,
-per [the facts file](references/facts.md). Together they are the settled
-input. The spec goes to `$SPEC_DIR/spec.md`; if it already exists, report
-that and stop.
+per [the facts file](references/facts.md). The spec goes to
+`$SPEC_DIR/spec.md`; if it already exists, report that and stop.
 
-## 2. Classify the input
+## 2. Classify the design
 
 `decisions.md` holds one entry per decision:
 
@@ -57,9 +56,9 @@ only after this preflight passes.
 ## 4. Review with the user
 
 Present the written file as the exact review target, list every D or state
-that there are none, show the decisions entries added since the input, name
-the entries the delivery boundary left to the user's release, and ask the
-user to confirm or revise the document.
+that there are none, show the decisions entries appended since this skill
+started, name the entries the delivery boundary left to the user's release,
+and ask the user to confirm or revise the document.
 
 Treat a revision like the first draft: classify, gate, and self-review what
 changed, then ask again.

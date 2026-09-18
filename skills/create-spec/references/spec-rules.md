@@ -15,8 +15,8 @@ as an exact observable derivation of R and D.
 
 Repository rules, organizational policy, and other higher authority apply
 independently. Do not copy them into the spec merely for self-containment. If
-these authorities and the settled input imply different contract results,
-return the conflict instead of choosing between them.
+these authorities and the design imply different contract results, return
+the conflict instead of choosing between them.
 
 ## Delivery boundary
 
@@ -33,7 +33,7 @@ local one.
 
 Ask:
 
-1. If the statement were false, would delivery violate what the settled input
+1. If the statement were false, would delivery violate what the design
    requires?
 2. Would its contract meaning stay the same if the internal solution changed?
 
@@ -52,12 +52,12 @@ Ask:
 1. Does the statement choose or exclude a task-specific internal solution?
 2. Does a decisions entry bind that choice?
 
-Two yes answers admit D. Otherwise: omit a design clearly not meant to bind;
-return the ambiguity when an entry supplies a design without settling whether
-it binds; and return the choice as unresolved when the contract depends on it.
-`create-spec` does not originate D from its own recommendation, inference, or
-preferred default, and whole-document confirmation does not cure such an
-insertion.
+Two yes answers admit D. Otherwise: omit an internal choice clearly not meant
+to bind; return the ambiguity when an entry supplies an internal choice without
+settling whether it binds; and return the choice as unresolved when the
+contract depends on it. `create-spec` does not originate D from its own
+recommendation, inference, or preferred default, and whole-document
+confirmation does not cure such an insertion.
 
 R and D are mutually exclusive at the semantic-unit level. Split a mixed
 statement and test each part independently.
@@ -140,7 +140,7 @@ If a premise cannot be established:
 ## Contract completeness and feasibility
 
 A contract is ready for confirmation when its obligations are complete, it has
-no known material conflict, and conformance is decidable. Input that settles
+no known material conflict, and conformance is decidable. A design that settles
 no R gives nothing to confirm; return that instead of drafting.
 
 `create-spec` need not prove that a successful implementation exists and,
