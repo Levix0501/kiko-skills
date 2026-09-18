@@ -12,8 +12,6 @@ Run `scripts/check-kiko` with the opened project root's absolute path as its onl
 
 Take the request the user brings, which may be empty, together with what is waiting in `$KIKO_ROOT/TODO.md` as one whole, and cut it vertically into outcomes that are each verifiable on their own: a narrow but complete path through every layer it touches, never one layer of the whole. Give each outcome the outcomes without which it cannot be delivered and accepted, and no others: importance never overrides an edge.
 
-An outcome ends at the repositories: how the work is then pushed or deployed is the user's own release, not a decision to settle here.
-
 Importance is the mark an outcome carries: `[P0]` for what must ship for the work to count, `[P1]` for what must follow, `[P2]` for what can wait. An outcome inherits the highest mark among the outcomes it blocks. Propose a mark for every outcome that has none.
 
 Show the user the outcomes, each with an id and its mark, and the edges between them, concisely; then pick what to build next: one or more outcomes, each blocked by nothing outside the pick, the most important first, as long as together they still read as one outcome, a single fresh context can build them, and another can verify them in full. Ask whether the cut and the pick suit, and nothing else alongside: the user may adjust either, and a question about the work would rest on a pick that may still change.
@@ -44,7 +42,7 @@ Interview the user until every decision is settled. Model the work as a design t
 
 The frontier is every unsettled decision whose prerequisites are all settled. Two frontier decisions never depend on each other, so a dependency chain settles one link per round.
 
-Ask the user only for decisions and for facts only they can provide. Every other fact is a prerequisite you settle yourself from the environment; while a lookup is running, its dependents stay out of the frontier.
+Ask the user only for decisions and for facts only they can provide. Every other fact is a prerequisite you settle yourself from the environment, even one the user stated: what they say about the environment may never have been measured, and a false premise found now costs a question, found in implementation costs the build. A check that contradicts the user is a decision to put to them. While a lookup is running, its dependents stay out of the frontier.
 
 Each round is one call of the harness's structured question tool, covering as much of the frontier as its per-call limit allows, starting with the questions that unblock the most. Without such a tool, ask in the reply with numbered options. In each question, put the recommended option first with its main reason and cost. Wait for the answers, update the tree, recompute the frontier, and ask the next round.
 

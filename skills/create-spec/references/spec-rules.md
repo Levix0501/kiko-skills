@@ -21,8 +21,9 @@ return the conflict instead of choosing between them.
 ## Delivery boundary
 
 The delivery is the work committed and verified in the repositories; the
-spec's obligations end there. Pushing, deploying, and whatever can be
-observed only after that are the user's release, outside the spec. A
+spec's obligations end there. The branch the work lands on and the shape of
+its commits, chosen when it lands, and pushing, deploying, and whatever can
+be observed only after that are the user's release, outside the spec. A
 decisions entry about the release grounds no R, D, A, or O and stays in
 `decisions.md` for the user. An R observable only after a push or deployment
 is not admitted; an R with both a local and a remote observation keeps the
@@ -123,8 +124,10 @@ Before a premise shapes the spec, ask whether the contract or its readiness
 would differ if the premise were false. If not, it does not affect the spec.
 If so, rely on it only with evidence that establishes it for the scope in
 which it carries contract weight and supports no broader conclusion than the
-one used. The evidence does not enter the spec; the premise, its source, and
-the R/D it bears on are recorded in the facts file.
+one used. A statement the user supplied establishes what they require, not
+the current state of a repository or runtime; a premise about that state
+needs evidence from that state. The evidence does not enter the spec; the
+premise, its source, and the R/D it bears on are recorded in the facts file.
 
 If a premise cannot be established:
 
