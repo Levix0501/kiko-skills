@@ -1,0 +1,5 @@
+interface:
+  display_name: "setup-kiko"
+  short_description: "Initialize or repair the project-local .kiko workspace at the project root"
+policy:
+  allow_implicit_invocation: false

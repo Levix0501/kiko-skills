@@ -1,0 +1,44 @@
+#!/usr/bin/env bash
+# Validate project-local .kiko state at an explicit opened project root.
+set -euo pipefail
+
+if [ "$#" -ne 1 ]; then
+  echo "usage: check-kiko WORKSPACE_ROOT" >&2
+  exit 2
+fi
+
+workspace_root=$1
+[ -d "$workspace_root" ] || { echo "kiko: no such directory: $workspace_root" >&2; exit 2; }
+workspace_root=$(CDPATH= cd -- "$workspace_root" && pwd -P)
+candidate="$workspace_root/.kiko"
+
+[ ! -L "$candidate" ] || { echo "kiko: refusing symlink: $candidate" >&2; exit 2; }
+if [ ! -e "$candidate" ]; then
+  echo "kiko: no .kiko found at project root: $workspace_root" >&2
+  echo "kiko: run the setup-kiko skill at the project root to initialize it" >&2
+  exit 3
+fi
+
+[ -d "$candidate" ] || { echo "kiko: expected a directory: $candidate" >&2; exit 2; }
+
+require() {
+  kind=$1
+  path=$2
+  [ ! -L "$path" ] || { echo "kiko: refusing symlink: $path" >&2; exit 2; }
+  if [ ! -e "$path" ]; then
+    echo "kiko: incomplete layout: missing $path" >&2
+    echo "kiko: rerun the setup-kiko skill at the project root to repair it" >&2
+    exit 3
+  fi
+  case "$kind" in
+    dir) [ -d "$path" ] || { echo "kiko: expected a directory: $path" >&2; exit 2; } ;;
+    file) [ -f "$path" ] || { echo "kiko: expected a regular file: $path" >&2; exit 2; } ;;
+  esac
+}
+
+require dir "$candidate/docs"
+require dir "$candidate/.implement"
+require file "$candidate/TODO.md"
+require file "$candidate/.gitignore"
+
+printf '%s\n' "$candidate"

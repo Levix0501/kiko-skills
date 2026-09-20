@@ -1,0 +1,148 @@
+#!/usr/bin/env bash
+# Structural tests for the create-spec skill.
+set -u
+
+HERE=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd -P)
+SKILL="$HERE/../SKILL.md"
+TEMPLATE="$HERE/../assets/spec-template.md"
+RULES="$HERE/../references/spec-rules.md"
+REVIEW="$HERE/../references/self-review.md"
+CASES="$HERE/semantic-cases.md"
+CHECK_KIKO="$HERE/../scripts/check-kiko"
+FACTS="$HERE/../references/facts.md"
+
+PASS=0
+FAIL=0
+
+pass() { PASS=$((PASS + 1)); printf 'ok   %s\n' "$1"; }
+fail() { FAIL=$((FAIL + 1)); printf 'FAIL %s\n' "$1"; }
+contains() { grep -qF -- "$2" "$1"; }
+not_contains() { ! grep -qF -- "$2" "$1"; }
+
+t01_resource_layout() {
+  [ -x "$CHECK_KIKO" ] &&
+    [ -f "$SKILL" ] &&
+    [ -f "$TEMPLATE" ] &&
+    [ -f "$RULES" ] &&
+    [ -f "$REVIEW" ] &&
+    [ -f "$FACTS" ] &&
+    [ -f "$CASES" ]
+}
+
+t02_skill_links_runtime_resources() {
+  contains "$SKILL" '](references/spec-rules.md)' &&
+    contains "$SKILL" '](assets/spec-template.md)' &&
+    contains "$SKILL" '](references/self-review.md)' &&
+    contains "$SKILL" '](references/facts.md)'
+}
+
+t03_template_has_exact_authoritative_sections() {
+  actual=$(sed -n '/^```markdown$/,/^```$/p' "$TEMPLATE" | grep '^## ')
+  expected='## Goal
+## Glossary
+## Normative Requirements
+## Binding Design Decisions
+## Observable Acceptance
+## Out of Scope'
+  [ "$actual" = "$expected" ]
+}
+
+t04_template_excludes_legacy_structure_and_status() {
+  for heading in \
+    'Objective & Scope' \
+    'Context & Constraints' \
+    'Design & Contracts' \
+    'Compatibility, Migration & Failure Behavior' \
+    'Acceptance Criteria' \
+    'Implementation Plan' \
+    'Decisions'; do
+    not_contains "$TEMPLATE" "## $heading" || return 1
+  done
+  not_contains "$TEMPLATE" 'Draft:' &&
+    not_contains "$TEMPLATE" 'Approved:'
+}
+
+t05_template_keeps_identifier_interface() {
+  contains "$TEMPLATE" '### R1 — <name>' &&
+    contains "$TEMPLATE" '### D1 (R1) — <name>' &&
+    contains "$TEMPLATE" '### A1 (R1) — <name>' &&
+    contains "$TEMPLATE" '### A2 (R1, D1) — <name>' &&
+    contains "$TEMPLATE" '### O1 — <name>' &&
+    contains "$TEMPLATE" 'Use `None`'
+}
+
+t06_rules_have_one_canonical_structure() {
+  actual=$(grep '^## ' "$RULES")
+  expected='## Authority
+## Delivery boundary
+## R: normative requirement
+## D: binding design decision
+## A: observable acceptance
+## O: out of scope
+## Contract terms
+## Non-contract content
+## Load-bearing premise evidence gate
+## Contract completeness and feasibility'
+  [ "$actual" = "$expected" ]
+}
+
+t07_self_review_is_complete_and_contiguous() {
+  actual=$(grep -oE '^[0-9]+\.' "$REVIEW" | tr '\n' ' ')
+  expected='1. 2. 3. 4. 5. 6. 7. 8. 9. 10. '
+  [ "$actual" = "$expected" ]
+}
+
+t08_semantic_fixture_is_nonempty_and_well_formed() {
+  contains "$CASES" '| Input or change | Expected result |' || return 1
+  rows=$(grep -c '^| ' "$CASES")
+  [ "$rows" -ge 16 ]
+}
+
+t09_shell_is_valid() {
+  bash -n "$CHECK_KIKO" &&
+    bash -n "$0"
+}
+
+t10_facts_reference_is_own() {
+  contains "$FACTS" '- FACT<n> [user] <statement> — bears on: <DECISION, R, or D IDs>' &&
+    contains "$FACTS" '- FACT<n> [verified: <source>] <statement> — bears on: <DECISION, R, or D IDs>' &&
+    not_contains "$FACTS" 'K<n>' &&
+    contains "$SKILL" '$SPEC_DIR/facts.md' &&
+    contains "$SKILL" 'without writing either file'
+}
+
+t11_rules_route_facts_to_facts_file() {
+  contains "$RULES" 'recorded in the facts file' &&
+    contains "$REVIEW" 'recorded in the facts file' &&
+    not_contains "$RULES" 'notes file' &&
+    not_contains "$REVIEW" 'notes file' &&
+    not_contains "$SKILL" 'notes' &&
+    not_contains "$RULES" 'create a project-facts layer'
+}
+
+run_test() {
+  name=$1
+  if (set -e; "$name"); then
+    pass "$name"
+  else
+    fail "$name"
+  fi
+}
+
+for test_name in \
+  t01_resource_layout \
+  t02_skill_links_runtime_resources \
+  t03_template_has_exact_authoritative_sections \
+  t04_template_excludes_legacy_structure_and_status \
+  t05_template_keeps_identifier_interface \
+  t06_rules_have_one_canonical_structure \
+  t07_self_review_is_complete_and_contiguous \
+  t08_semantic_fixture_is_nonempty_and_well_formed \
+  t09_shell_is_valid \
+  t10_facts_reference_is_own \
+  t11_rules_route_facts_to_facts_file; do
+  run_test "$test_name"
+done
+
+printf '\n%s passed, %s failed\n' "$PASS" "$FAIL"
+[ "$FAIL" -eq 0 ]

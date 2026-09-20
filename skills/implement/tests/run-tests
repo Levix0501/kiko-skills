@@ -1,0 +1,433 @@
+#!/usr/bin/env bash
+# Behavioral and stable-interface tests for the implement skill.
+set -u
+
+HERE=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd -P)
+SKILL="$HERE/../SKILL.md"
+SCRIPTS="$HERE/../scripts"
+REFERENCES="$HERE/../references"
+ASSETS="$HERE/../assets"
+IMPL_TEMPLATE="$ASSETS/implementation-result-template.md"
+REVIEW_TEMPLATE="$ASSETS/review-result-template.md"
+CHECK_KIKO="$SCRIPTS/check-kiko"
+PREPARE_DIR="$SCRIPTS/prepare-implement-dir"
+CHECK_TEXT="$SCRIPTS/check-text-only"
+SETUP_KIKO="$HERE/../../setup-kiko/scripts/init-kiko"
+KICK_CHECK="$HERE/../../kick-off/scripts/check-kiko"
+CREATE_CHECK="$HERE/../../create-spec/scripts/check-kiko"
+README="$HERE/../../../README.md"
+
+TEST_TMP=$(mktemp -d "${TMPDIR:-/tmp}/implement-tests.XXXXXX")
+TEST_TMP=$(CDPATH= cd -- "$TEST_TMP" && pwd -P)
+trap 'rm -rf "$TEST_TMP"' EXIT
+
+PASS=0
+FAIL=0
+
+pass() { PASS=$((PASS + 1)); printf 'ok   %s\n' "$1"; }
+fail() { FAIL=$((FAIL + 1)); printf 'FAIL %s\n' "$1"; }
+contains() { grep -qF -- "$2" "$1"; }
+not_contains() { ! grep -qF -- "$2" "$1"; }
+
+new_repo() {
+  path=$1
+  mkdir -p "$path"
+  git -C "$path" init -q -b main
+  git -C "$path" config user.name test
+  git -C "$path" config user.email test@example.com
+}
+
+run_rc() {
+  expected=$1
+  shift
+  rc=0
+  "$@" >/dev/null 2>&1 || rc=$?
+  [ "$rc" -eq "$expected" ]
+}
+
+t01_resource_layout() {
+  [ -x "$CHECK_KIKO" ] || return 1
+  [ -x "$PREPARE_DIR" ] || return 1
+  [ -x "$CHECK_TEXT" ] || return 1
+  [ "$(find "$SCRIPTS" -maxdepth 1 -type f | wc -l | tr -d ' ')" -eq 3 ] || return 1
+  [ "$(find "$REFERENCES" -maxdepth 1 -type f -name '*.md' | wc -l | tr -d ' ')" -eq 5 ] || return 1
+  [ -f "$REFERENCES/finding-gate.md" ] || return 1
+  [ -f "$REFERENCES/facts.md" ] || return 1
+  [ -f "$REFERENCES/spec-amendment.md" ] || return 1
+  [ -f "$IMPL_TEMPLATE" ] || return 1
+  [ -f "$REVIEW_TEMPLATE" ]
+}
+
+t02_check_kiko_is_shared_and_layout_is_docs() {
+  cmp -s "$CHECK_KIKO" "$KICK_CHECK" || return 1
+  cmp -s "$CHECK_KIKO" "$CREATE_CHECK" || return 1
+
+  root="$TEST_TMP/check-layout"
+  new_repo "$root"
+  kiko=$($SETUP_KIKO "$root") || return 1
+  [ "$kiko" = "$root/.kiko" ] || return 1
+  [ -d "$root/.kiko/docs" ] || return 1
+  [ -d "$root/.kiko/.implement" ] || return 1
+  [ ! -e "$root/.kiko/specs" ] || return 1
+  [ ! -e "$root/.kiko/notes" ] || return 1
+  contains "$root/.kiko/.gitignore" '/.implement/' || return 1
+  not_contains "$root/.kiko/.gitignore" '/notes/' || return 1
+  [ -z "$(git -C "$root" status --porcelain=v1 -uall)" ] || return 1
+  [ "$($CHECK_KIKO "$root")" = "$root/.kiko" ] || return 1
+
+  mkdir "$root/.kiko/builds"
+  printf 'historical\n' >"$root/.kiko/builds/old.md"
+  printf '/notes/\n' >>"$root/.kiko/.gitignore"
+  $SETUP_KIKO "$root" >/dev/null || return 1
+  [ "$(cat "$root/.kiko/builds/old.md")" = historical ] || return 1
+  not_contains "$root/.kiko/.gitignore" '/notes/' || return 1
+  $CHECK_KIKO "$root" >/dev/null
+}
+
+t03_check_kiko_exit_codes() {
+  missing="$TEST_TMP/missing-layout"
+  mkdir -p "$missing"
+  run_rc 3 "$CHECK_KIKO" "$missing" || return 1
+
+  incomplete="$TEST_TMP/incomplete-layout"
+  mkdir -p "$incomplete/.kiko/docs" "$incomplete/.kiko/.implement"
+  printf '# TODO\n' >"$incomplete/.kiko/TODO.md"
+  run_rc 3 "$CHECK_KIKO" "$incomplete" || return 1
+
+  no_docs="$TEST_TMP/no-docs-layout"
+  mkdir -p "$no_docs/.kiko/.implement"
+  printf '# TODO\n' >"$no_docs/.kiko/TODO.md"
+  : >"$no_docs/.kiko/.gitignore"
+  run_rc 3 "$CHECK_KIKO" "$no_docs" || return 1
+
+  old="$TEST_TMP/old-layout"
+  mkdir -p "$old/.kiko/specs" "$old/.kiko/notes" "$old/.kiko/.implement"
+  printf '# TODO\n' >"$old/.kiko/TODO.md"
+  : >"$old/.kiko/.gitignore"
+  run_rc 3 "$CHECK_KIKO" "$old" || return 1
+
+  wrong="$TEST_TMP/wrong-layout"
+  mkdir -p "$wrong"
+  printf 'not a directory\n' >"$wrong/.kiko"
+  run_rc 2 "$CHECK_KIKO" "$wrong"
+}
+
+t04_prepare_dir_uses_spec_directory() {
+  root="$TEST_TMP/prepare"
+  new_repo "$root"
+  $SETUP_KIKO "$root" >/dev/null || return 1
+  spec_dir="$root/.kiko/docs/2026-08-26-payment-webhook"
+  mkdir "$spec_dir"
+  printf '# Spec\n' >"$spec_dir/spec.md"
+
+  output=$($PREPARE_DIR "$root/.kiko" "$spec_dir") || return 1
+  expected="$root/.kiko/.implement/2026-08-26-payment-webhook"
+  [ "$output" = "$expected" ] || return 1
+  for child in dispatch results; do
+    [ -d "$expected/$child" ] || return 1
+  done
+  [ ! -e "$expected/scopes" ] || return 1
+  [ ! -e "$expected/decisions" ] || return 1
+  [ ! -e "$expected/progress.md" ] || return 1
+  [ "$(head -n 1 "$spec_dir/facts.md")" = '# Facts — 2026-08-26-payment-webhook' ] || return 1
+  [ ! -e "$spec_dir/invariants.md" ] || return 1
+  printf -- '- FACT1 [user] appended\n' >>"$spec_dir/facts.md"
+  before=$(cat "$spec_dir/facts.md")
+  [ "$($PREPARE_DIR "$root/.kiko" "$spec_dir")" = "$expected" ] || return 1
+  [ "$(cat "$spec_dir/facts.md")" = "$before" ] || return 1
+  [ "$(cd "$root" && $PREPARE_DIR .kiko .kiko/docs/2026-08-26-payment-webhook)" = "$expected" ] || return 1
+
+  dir_facts="$root/.kiko/docs/2026-08-26-dir-facts"
+  mkdir -p "$dir_facts/facts.md"
+  printf '# Spec\n' >"$dir_facts/spec.md"
+  run_rc 2 "$PREPARE_DIR" "$root/.kiko" "$dir_facts"
+}
+
+t05_prepare_dir_rejects_invalid_spec_directories() {
+  root="$TEST_TMP/prepare-invalid"
+  new_repo "$root"
+  $SETUP_KIKO "$root" >/dev/null || return 1
+
+  for name in example 2026-08-26- 2026-8-26-topic 26-08-26-topic; do
+    mkdir "$root/.kiko/docs/$name"
+    printf '# Spec\n' >"$root/.kiko/docs/$name/spec.md"
+    run_rc 2 "$PREPARE_DIR" "$root/.kiko" "$root/.kiko/docs/$name" || return 1
+  done
+
+  mkdir -p "$root/.kiko/docs/nested/2026-08-26-valid"
+  printf '# Spec\n' >"$root/.kiko/docs/nested/2026-08-26-valid/spec.md"
+  run_rc 2 "$PREPARE_DIR" "$root/.kiko" "$root/.kiko/docs/nested/2026-08-26-valid" || return 1
+
+  mkdir "$root/.kiko/docs/2026-08-26-no-spec"
+  run_rc 2 "$PREPARE_DIR" "$root/.kiko" "$root/.kiko/docs/2026-08-26-no-spec" || return 1
+
+  mkdir "$root/.kiko/docs/2026-08-26-ok"
+  printf '# Spec\n' >"$root/.kiko/docs/2026-08-26-ok/spec.md"
+  run_rc 2 "$PREPARE_DIR" "$root/.kiko" "$root/.kiko/docs/2026-08-26-ok/spec.md" || return 1
+
+  ln -s "$root/.kiko/docs/2026-08-26-ok" "$root/.kiko/docs/2026-08-26-link"
+  run_rc 2 "$PREPARE_DIR" "$root/.kiko" "$root/.kiko/docs/2026-08-26-link"
+}
+
+t06_role_output_interfaces_are_complete() {
+  contains "$REFERENCES/implementer.md" '[implementation-result-template.md](../assets/implementation-result-template.md)' || return 1
+  not_contains "$REFERENCES/implementer.md" '# Evidence' || return 1
+  not_contains "$REFERENCES/implementer.md" 'Evidence-complete' || return 1
+  contains "$IMPL_TEMPLATE" '# Implementation Result' || return 1
+  contains "$IMPL_TEMPLATE" 'Status: DONE|BLOCKED' || return 1
+  contains "$IMPL_TEMPLATE" 'Created from: <source branch, recorded by the dispatch that created the work branch and carried forward>' || return 1
+  for section in '## Repositories' '## Verification' '## Facts' '## Concern' '## Spec issue' '## External blocker' '## Remaining'; do
+    contains "$IMPL_TEMPLATE" "$section" || return 1
+  done
+  contains "$IMPL_TEMPLATE" 'implemented, verified, committed, and clean' || return 1
+  not_contains "$IMPL_TEMPLATE" 'END_REPOSITORY' || return 1
+
+  contains "$REFERENCES/reviewer.md" '[review-result-template.md](../assets/review-result-template.md)' || return 1
+  not_contains "$REFERENCES/reviewer.md" 'FIX:' || return 1
+  not_contains "$REFERENCES/reviewer.md" 'Result-complete' || return 1
+  contains "$REVIEW_TEMPLATE" '# Review Result' || return 1
+  contains "$REVIEW_TEMPLATE" 'Status: clean|issues' || return 1
+  contains "$REVIEW_TEMPLATE" 'F<n> | critical|important|minor | <self-contained finding>' || return 1
+  contains "$REVIEW_TEMPLATE" 'Fix: DONE|BLOCKED' || return 1
+  contains "$REVIEW_TEMPLATE" 'Created from: <source branch, recorded by the dispatch that created the work branch and carried forward>' || return 1
+  for section in '## Repositories' '## Prior findings' '## Findings' '## Facts' '## Spec issue' '## External blocker' '## Fix' '### Verification' '### Remaining'; do
+    contains "$REVIEW_TEMPLATE" "$section" || return 1
+  done
+  not_contains "$REVIEW_TEMPLATE" 'END_REPOSITORY' || return 1
+
+  not_contains "$REFERENCES/reviewer.md" 'not_addressed'
+}
+
+t07_cross_role_protocol_is_consistent() {
+  spec_issue='a state the landing must handle on which the Spec is silent'
+  for role in implementer reviewer; do
+    contract="$REFERENCES/$role.md"
+    contains "$contract" '[facts.md](facts.md)' || return 1
+    contains "$contract" 'never end your turn to wait' || return 1
+  done
+  for role in implementer reviewer; do
+    contract="$REFERENCES/$role.md"
+    contains "$contract" "$spec_issue" || return 1
+    contains "$contract" 'do not create Output' || return 1
+    contains "$contract" 'ERROR: dirty repository: <path>' || return 1
+  done
+  contains "$REFERENCES/reviewer.md" 'ERROR: moved repository: <path>' || return 1
+  contains "$SKILL" '- you commit it as it stands, one commit per repository on its current branch;' || return 1
+  contains "$SKILL" '- the user commits, stashes, or discards it themselves and tells you when every tree is clean;' || return 1
+  contains "$SKILL" '- the run ends (Step 14).' || return 1
+  contains "$REFERENCES/implementer.md" 'keep R/D/A/O, FACT<n>, and F<n> identifiers out of product code, comments, and tests' || return 1
+  not_contains "$REFERENCES/reviewer.md" 'identifiers out of product code' || return 1
+  contains "$SKILL" 'route by the spec issue' || return 1
+  not_contains "$SKILL" 'never route the result' || return 1
+  contains "$SKILL" 'Review+fix result — results/<name>.md' || return 1
+  [ "$(grep -cF 'Facts: $FACTS_FILE' "$SKILL")" -eq 2 ] || return 1
+
+  branch_rule="creating it from the repository's current branch on first touch"
+  contains "$SKILL" "$branch_rule" || return 1
+  contains "$REFERENCES/implementer.md" "$branch_rule" || return 1
+  contains "$REFERENCES/reviewer.md" "$branch_rule" || return 1
+  contains "$SKILL" 'Created from' || return 1
+  contains "$IMPL_TEMPLATE" 'Created from:' || return 1
+  contains "$REFERENCES/implementer.md" 'after that, a dirty tree you cannot clear stops the work: report it as BLOCKED' || return 1
+  contains "$SKILL" 'or the branch the user names where no result records it' || return 1
+
+  contains "$SKILL" 'a spec issue, whether rejected or adopted as an amendment' || return 1
+  contains "$REFERENCES/implementer.md" "\`Prior result\`, when present, is the result whose report you pick up: read it first" || return 1
+  contains "$REFERENCES/spec-amendment.md" 'Dispatch a successor through the reporting result' || return 1
+  contains "$REFERENCES/reviewer.md" 'remove anything a check leaves behind' || return 1
+  contains "$REFERENCES/reviewer.md" 'First finding ID'
+}
+
+t08_conditional_references_are_linked_and_complete() {
+  contains "$SKILL" '[references/finding-gate.md](references/finding-gate.md)' || return 1
+  contains "$SKILL" '[references/spec-amendment.md](references/spec-amendment.md)' || return 1
+  not_contains "$SKILL" 'references/recovery.md' || return 1
+
+  for choice in '`Fix again`' '`Accept risk`' '`Incomplete`'; do
+    contains "$REFERENCES/finding-gate.md" "$choice" || return 1
+  done
+  contains "$REFERENCES/finding-gate.md" 'Risk acceptance — DECISION<n>' || return 1
+  contains "$REFERENCES/finding-gate.md" '(../SKILL.md#25-decisions)' || return 1
+  contains "$REFERENCES/spec-amendment.md" '(../SKILL.md#prior-result)' || return 1
+  contains "$REFERENCES/spec-amendment.md" '(../SKILL.md#25-decisions)' || return 1
+  contains "$REFERENCES/spec-amendment.md" 'Spec amendment — DECISION<n>' || return 1
+  contains "$SKILL" 'Spec amendment — DECISION<n>' || return 1
+  contains "$SKILL" '- DECISION<n> [controller] <question>' || return 1
+  contains "$SKILL" '- DECISION<n> [user] <question>'
+}
+
+t09_removed_protocol_does_not_return() {
+  for path in "$SKILL" "$REFERENCES"/*.md "$ASSETS"/*.md; do
+    not_contains "$path" 'DONE_WITH_CONCERNS' || return 1
+    not_contains "$path" 'Manifest-complete: yes' || return 1
+    not_contains "$path" 'review-package' || return 1
+    not_contains "$path" 'BUILD_FILE' || return 1
+    not_contains "$path" 'Repository authorization' || return 1
+    not_contains "$path" 'First new finding ID' || return 1
+    not_contains "$path" 'Prior review result' || return 1
+    not_contains "$path" 'validate-progress' || return 1
+    not_contains "$path" 'recovery.md' || return 1
+    for gone in 'Phase P<n>' 'Mode: intermediate|final' 'Level: code|model' 'nvariant' 'uncovered' 'I<k>' 'Notes' 'Scope' 'Recheck' 'scopes/' 'intermediate phase' 'final phase' 'decisions/<name>' 'Decided by:' '[CONTROLLER]' 'does not outlive' 'evidence-recovery' 'Recovery evidence' 'Action:'; do
+      not_contains "$path" "$gone" || return 1
+    done
+  done
+  not_contains "$SKILL" 'there is no automatic Minor-only round 2.' || return 1
+  not_contains "$SKILL" 'Files absent from progress are orphans' || return 1
+  not_contains "$REFERENCES/reviewer.md" 'Concern'
+}
+
+t10_readme_quickstart_and_setup_scripts() {
+  not_contains "$SETUP_KIKO" 'mkdir -p "$kiko_dir/specs" "$kiko_dir/builds"' || return 1
+  not_contains "$KICK_CHECK" 'require dir "$candidate/builds"' || return 1
+  not_contains "$CREATE_CHECK" 'require dir "$candidate/builds"' || return 1
+  not_contains "$CHECK_KIKO" 'require dir "$candidate/builds"' || return 1
+  contains "$README" 'npx skills add Levix0501/kiko-skills' || return 1
+  for command in /setup-kiko /kick-off /create-spec /implement; do
+    contains "$README" "$command" || return 1
+  done
+}
+
+t11_dispatch_manifests_supply_contract_preflights() {
+  for role in implementer reviewer; do
+    contains "$SKILL" "Role: $role" || return 1
+  done
+  for role in implementer reviewer; do
+    contains "$REFERENCES/$role.md" "\`Role: $role\`" || return 1
+    contains "$REFERENCES/$role.md" 'absolute Spec, Facts and Output paths' || return 1
+  done
+
+  for line in 'Spec: $SPEC_FILE' 'Facts: $FACTS_FILE' 'Output: $IMPLEMENT_DIR/results/<name>.md'; do
+    contains "$SKILL" "$line" || return 1
+  done
+  for role in implementer reviewer; do
+    contract="$REFERENCES/$role.md"
+    contains "$contract" '`Prior result`' || return 1
+    contains "$contract" 'Prior disposition: spec-issue-rejected' || return 1
+  done
+
+  contains "$SKILL" 'Branch: kiko/$SPEC_SLUG' || return 1
+
+  contains "$SKILL" 'First finding ID: F<n>' || return 1
+
+  contains "$SKILL" 'Prior result: <absolute-result-path>' || return 1
+
+  [ "$(grep -cF 'per [2.4 Dispatch](#24-dispatch)' "$SKILL")" -eq 2 ] || return 1
+  contains "$SKILL" 'continues that subagent, sending it the same prompt with the new manifest' || return 1
+  contains "$SKILL" 'When it cannot, or that subagent no longer exists, dispatch a fresh subagent' || return 1
+  contains "$SKILL" 'A successor after a blocked attempt is always a fresh subagent'
+}
+
+t12_skill_supporting_paths_exist() {
+  for role in implementer reviewer; do
+    contains "$SKILL" "references/$role.md" || return 1
+  done
+  for path in $(grep -o 'references/[a-z-]*\.md' "$SKILL" | sort -u); do
+    [ -f "$HERE/../$path" ] || return 1
+  done
+  for path in $(grep -o 'scripts/[a-z-]*' "$SKILL" | sort -u); do
+    [ -f "$HERE/../$path" ] || return 1
+  done
+}
+
+t13_facts_reference_describes_spec_dir_file() {
+  contains "$SKILL" 'SPEC_FILE="$SPEC_DIR/spec.md"' &&
+    contains "$SKILL" 'FACTS_FILE="$SPEC_DIR/facts.md"' &&
+    not_contains "$SKILL" 'SPEC_POINTER' &&
+    not_contains "$SKILL" 'INVARIANTS_FILE' &&
+    contains "$SKILL" 'DECISIONS_FILE="$SPEC_DIR/decisions.md"' &&
+    contains "$SKILL" 'No role receives this file' &&
+    contains "$REFERENCES/facts.md" '- FACT<n> [user] <statement> — bears on: <DECISION, R, or D IDs>' &&
+    contains "$REFERENCES/facts.md" '- FACT<n> [verified: <source>] <statement> — bears on: <DECISION, R, or D IDs>' &&
+    not_contains "$REFERENCES/facts.md" 'read-only role' &&
+    not_contains "$REFERENCES/facts.md" 'K<n>'
+}
+
+t14_check_text_only_classifies_fix_deltas() {
+  root="$TEST_TMP/text-only"
+  new_repo "$root"
+  mkdir -p "$root/server/migrations" "$root/deploy" "$root/.kiko/docs"
+  printf 'package x\n\n// answer is the answer.\nfunc answer() int { return 42 } // answer\n\nvar u = "http://a" // note\n' >"$root/server/x.go"
+  printf '/*\n * set writes one.\n */\nfunc set(p *int) {\n\t*p = 1\n}\n' >"$root/server/y.go"
+  printf -- '-- create the table\nCREATE TABLE t (id int);\n' >"$root/server/migrations/0001_t.up.sql"
+  printf -- '-- pick\nSELECT 1;\n' >"$root/server/q.sql"
+  printf '# services\nservices: {}\n' >"$root/deploy/compose.yml"
+  printf '# Readme\n' >"$root/README.md"
+  printf '# spec\n' >"$root/.kiko/docs/2026-08-26-x.md"
+  git -C "$root" add -A && git -C "$root" commit -qm base || return 1
+  prev=$(git -C "$root" rev-parse HEAD)
+
+  step() {
+    git -C "$root" add -A && git -C "$root" commit -qm "$1" || return 1
+    head=$(git -C "$root" rev-parse HEAD)
+    run_rc "$2" "$CHECK_TEXT" "$root" "$prev" "$head" || return 1
+    prev=$head
+  }
+
+  printf 'package x\n\n// answer is still the answer.\nfunc answer() int { return 42 } // the answer\n\nvar u = "http://a" // note\n' >"$root/server/x.go"
+  printf -- '-- pick one\nSELECT 1;\n' >"$root/server/q.sql"
+  printf '# Readme\n\nMore words.\n' >"$root/README.md"
+  printf '# all services\nservices: {}\n' >"$root/deploy/compose.yml"
+  printf 'package k\n\nfunc k() {}\n' >"$root/.kiko/k.go"
+  printf '/*\n * set writes the number one.\n */\nfunc set(p *int) {\n\t*p = 1\n}\n' >"$root/server/y.go"
+  step text-only 0 || return 1
+
+  printf '/*\n * set writes the number one.\n */\nfunc set(p *int) {\n\t*p = 2\n}\n' >"$root/server/y.go"
+  step star-statement 1 || return 1
+
+  printf 'package x\n\n// answer is still the answer.\nfunc answer() int { return 43 } // the answer\n\nvar u = "http://a" // note\n' >"$root/server/x.go"
+  git -C "$root" add -A && git -C "$root" commit -qm code || return 1
+  head=$(git -C "$root" rev-parse HEAD)
+  out=$("$CHECK_TEXT" "$root" "$prev" "$head")
+  [ $? -eq 1 ] || return 1
+  printf '%s' "$out" | grep -q 'server/x.go' || return 1
+  prev=$head
+
+  printf 'package x\n\n// answer is still the answer.\nfunc answer() int { return 43 } // the answer\n\nvar u = "http://b" // note\n' >"$root/server/x.go"
+  step string-before-comment 1 || return 1
+
+  printf -- '-- create the table t\nCREATE TABLE t (id int);\n' >"$root/server/migrations/0001_t.up.sql"
+  step migration-comment 1 || return 1
+
+  printf '\000\001\002' >"$root/blob.bin"
+  step binary 1 || return 1
+
+  git -C "$root" update-index --add --cacheinfo "160000,$prev,apps/sub" || return 1
+  git -C "$root" commit -qm gitlink || return 1
+  prev=$(git -C "$root" rev-parse HEAD)
+  printf '# Readme\n\nMore words, again.\n' >"$root/README.md"
+  git -C "$root" add README.md || return 1
+  git -C "$root" update-index --add --cacheinfo "160000,$prev,apps/sub" || return 1
+  git -C "$root" commit -qm 'doc and pointer' || return 1
+  head=$(git -C "$root" rev-parse HEAD)
+  run_rc 0 "$CHECK_TEXT" "$root" "$prev" "$head" || return 1
+  prev=$head
+
+  run_rc 2 "$CHECK_TEXT" "$root" "$prev" || return 1
+  run_rc 2 "$CHECK_TEXT" "$root" "$prev" nope
+}
+
+TESTS='t01_resource_layout
+t02_check_kiko_is_shared_and_layout_is_docs
+t03_check_kiko_exit_codes
+t04_prepare_dir_uses_spec_directory
+t05_prepare_dir_rejects_invalid_spec_directories
+t06_role_output_interfaces_are_complete
+t07_cross_role_protocol_is_consistent
+t08_conditional_references_are_linked_and_complete
+t09_removed_protocol_does_not_return
+t10_readme_quickstart_and_setup_scripts
+t11_dispatch_manifests_supply_contract_preflights
+t12_skill_supporting_paths_exist
+t13_facts_reference_describes_spec_dir_file
+t14_check_text_only_classifies_fix_deltas'
+
+for test_name in $TESTS; do
+  if (set -e; "$test_name"); then
+    pass "$test_name"
+  else
+    fail "$test_name"
+  fi
+done
+
+printf '\n%s passed, %s failed\n' "$PASS" "$FAIL"
+[ "$FAIL" -eq 0 ]

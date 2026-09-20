@@ -1,0 +1,74 @@
+#!/usr/bin/env bash
+# Create one spec's implementation artifact directories.
+# Usage: prepare-implement-dir KIKO_ROOT SPEC_DIR
+set -euo pipefail
+
+if [ "$#" -ne 2 ]; then
+  echo "usage: prepare-implement-dir KIKO_ROOT SPEC_DIR" >&2
+  exit 2
+fi
+
+kiko_root=$1
+spec_dir=$2
+
+[ -d "$kiko_root" ] || { echo "no such KIKO_ROOT directory: $kiko_root" >&2; exit 2; }
+[ ! -L "$kiko_root" ] || { echo "refusing symlink KIKO_ROOT: $kiko_root" >&2; exit 2; }
+kiko_root=$(CDPATH= cd -- "$kiko_root" && pwd -P)
+
+[ ! -L "$spec_dir" ] || { echo "refusing symlink spec directory: $spec_dir" >&2; exit 2; }
+[ -d "$spec_dir" ] || { echo "no such spec directory: $spec_dir" >&2; exit 2; }
+spec_dir=$(CDPATH= cd -- "$spec_dir" && pwd -P)
+slug=$(basename -- "$spec_dir")
+
+[ "$(dirname -- "$spec_dir")" = "$kiko_root/docs" ] || {
+  echo "spec directory must be directly under $kiko_root/docs: $spec_dir" >&2
+  exit 2
+}
+
+case "$slug" in
+  [0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9]-?*) ;;
+  *)
+    echo "spec directory must be named YYYY-MM-DD-<topic>; rename it before rerunning the implement skill: $slug" >&2
+    exit 2
+    ;;
+esac
+
+spec="$spec_dir/spec.md"
+[ ! -L "$spec" ] || { echo "refusing symlink spec: $spec" >&2; exit 2; }
+[ -f "$spec" ] || { echo "no spec.md in spec directory: $spec_dir" >&2; exit 2; }
+
+base="$kiko_root/.implement"
+[ -d "$base" ] && [ ! -L "$base" ] || {
+  echo "expected existing implementation root: $base" >&2
+  exit 2
+}
+
+dir="$base/$slug"
+if [ -e "$dir" ] || [ -L "$dir" ]; then
+  [ -d "$dir" ] && [ ! -L "$dir" ] || { echo "expected implementation directory: $dir" >&2; exit 2; }
+else
+  mkdir "$dir"
+fi
+
+for child in dispatch results; do
+  path="$dir/$child"
+  if [ -e "$path" ] || [ -L "$path" ]; then
+    [ -d "$path" ] && [ ! -L "$path" ] || { echo "expected directory: $path" >&2; exit 2; }
+  else
+    mkdir "$path"
+  fi
+done
+
+ensure_file() {
+  path=$1
+  title=$2
+  if [ -e "$path" ] || [ -L "$path" ]; then
+    [ -f "$path" ] && [ ! -L "$path" ] || { echo "expected file: $path" >&2; exit 2; }
+  else
+    printf '# %s — %s\n' "$title" "$slug" >"$path"
+  fi
+}
+
+ensure_file "$spec_dir/facts.md" Facts
+
+cd "$dir" && pwd -P

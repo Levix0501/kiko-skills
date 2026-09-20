@@ -1,0 +1,10 @@
+{
+  "name": "kiko-skills",
+  "description": "A lightweight collection of agent skills that speed up everyday development: kick-off clarifies the outcome, create-spec freezes an approved authority, and implement delivers a reviewed, resumable build.",
+  "skills": [
+    "./skills/setup-kiko",
+    "./skills/kick-off",
+    "./skills/create-spec",
+    "./skills/implement"
+  ]
+}
