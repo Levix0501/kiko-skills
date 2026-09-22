@@ -212,8 +212,8 @@ t07_cross_role_protocol_is_consistent() {
     contains "$contract" 'ERROR: dirty repository: <path>' || return 1
   done
   contains "$REFERENCES/reviewer.md" 'ERROR: moved repository: <path>' || return 1
-  contains "$SKILL" '- you commit it as it stands, one commit per repository on its current branch;' || return 1
-  contains "$SKILL" '- the user commits, stashes, or discards it themselves and tells you when every tree is clean;' || return 1
+  contains "$SKILL" '- the agent commits it as it stands, one commit per repository on its current branch;' || return 1
+  contains "$SKILL" '- the user commits, stashes, or discards it themselves and tells the agent when every tree is clean;' || return 1
   contains "$SKILL" '- the run ends (Step 14).' || return 1
   contains "$REFERENCES/implementer.md" 'keep R/D/A/O, FACT<n>, and F<n> identifiers out of product code, comments, and tests' || return 1
   not_contains "$REFERENCES/reviewer.md" 'identifiers out of product code' || return 1

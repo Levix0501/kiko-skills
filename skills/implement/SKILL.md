@@ -46,8 +46,8 @@ DECISIONS_FILE="$SPEC_DIR/decisions.md"
 
 Then check every repository at or under `$PROJECT_ROOT` for uncommitted content: the roles create the work branch from the current branch, so anything left uncommitted would end up in their work. If any tree is not clean, show the user what you found right away, before looking into anything else, and offer the choice:
 
-- you commit it as it stands, one commit per repository on its current branch;
-- the user commits, stashes, or discards it themselves and tells you when every tree is clean;
+- the agent commits it as it stands, one commit per repository on its current branch;
+- the user commits, stashes, or discards it themselves and tells the agent when every tree is clean;
 - the run ends (Step 14).
 
 Then show the user, for each repository, the branch the work branch will be created from, its head, and how far it is ahead of or behind its upstream: reviewers see only `Base..Head`, so nothing later revisits where `Base` came from.
@@ -170,8 +170,8 @@ If the successor also stops short, show the user its `Remaining` and ask how to 
 
 Ask the user how to land the work in every repository the run touched, the ones in the latest adopted result's repository blocks:
 
-- you merge `kiko/$SPEC_SLUG` into the branch it was created from — its `Created from`, or the branch the user names where no result records it — and delete it;
-- you push the branch for the user to open a pull request;
+- the agent merges `kiko/$SPEC_SLUG` into the branch it was created from — its `Created from`, or the branch the user names where no result records it — and deletes it;
+- the agent pushes the branch for the user to open a pull request;
 - the branch stays as it is.
 
 Do as they choose.
