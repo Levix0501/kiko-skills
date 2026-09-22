@@ -106,6 +106,7 @@ t09_shell_is_valid() {
 t10_facts_reference_is_own() {
   contains "$FACTS" '- FACT<n> [user] <statement> — bears on: <DECISION, R, or D IDs>' &&
     contains "$FACTS" '- FACT<n> [verified: <source>] <statement> — bears on: <DECISION, R, or D IDs>' &&
+    contains "$FACTS" 'says no more than its source shows' &&
     not_contains "$FACTS" 'K<n>' &&
     contains "$SKILL" '$SPEC_DIR/facts.md' &&
     contains "$SKILL" 'without writing either file'

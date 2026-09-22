@@ -338,6 +338,7 @@ t13_facts_reference_describes_spec_dir_file() {
     contains "$SKILL" 'No role receives this file' &&
     contains "$REFERENCES/facts.md" '- FACT<n> [user] <statement> — bears on: <DECISION, R, or D IDs>' &&
     contains "$REFERENCES/facts.md" '- FACT<n> [verified: <source>] <statement> — bears on: <DECISION, R, or D IDs>' &&
+    contains "$REFERENCES/facts.md" 'says no more than its source shows' &&
     not_contains "$REFERENCES/facts.md" 'read-only role' &&
     not_contains "$REFERENCES/facts.md" 'K<n>'
 }

@@ -44,7 +44,7 @@ Interview the user until every decision is settled. Model the work as a design t
 
 The frontier is every unsettled decision whose prerequisites are all settled. Two frontier decisions never depend on each other, so a dependency chain settles one link per round.
 
-Ask the user only for decisions and for facts only they can provide. Every other fact is a prerequisite you settle yourself from the environment, even one the user stated: what they say about the environment may never have been measured, and a false premise found now costs a question, found in implementation costs the build. A check that contradicts the user is a decision to put to them. While a lookup is running, its dependents stay out of the frontier.
+Ask the user only for decisions and for facts only they can provide. A choice the implementer may not replace is a decision, whoever proposed it. Every other fact is a prerequisite you settle yourself from the environment, even one the user stated: what they say about the environment may never have been measured, and a false premise found now costs a question, found in implementation costs the build. A check that contradicts the user is a decision to put to them. While a lookup is running, its dependents stay out of the frontier.
 
 Each round is one call of the harness's structured question tool, covering as much of the frontier as its per-call limit allows, starting with the questions that unblock the most. Without such a tool, ask in the reply with numbered options. In each question, put the recommended option first with its main reason and cost. Wait for the answers, update the tree, recompute the frontier, and ask the next round.
 
@@ -55,7 +55,7 @@ The interview ends when the frontier is empty: every decision is settled and not
 When the frontier is empty, present a concise summary of what was settled:
 
 - the outcome and its boundaries
-- the requirements and decisions the work must honor
+- the requirements and decisions the work must honor, each as the user settled it
 - the facts relied on, each with how it was established, and the risks accepted
 
 ## Next action

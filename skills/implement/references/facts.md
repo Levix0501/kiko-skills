@@ -9,7 +9,7 @@
 - FACT<n> [verified: <source>] <statement> — bears on: <DECISION, R, or D IDs>
 ```
 
-`user` marks a statement the user supplied; `verified` names the command, `path:line`, result file, or observation that established the statement in the writer's own session. `bears on` lists the DECISION, R, or D whose meaning or readiness depends on the fact; such a fact is a premise of the spec. Numbers in `FACT<n>` increase and are never reused; a correction is a new line that says which ID it supersedes.
+`user` marks a statement only the user could supply; `verified` names the command, `path:line`, result file, or observation that established the statement in the writer's own session. A statement says no more than its source shows, and one without a source is not a fact; what the user wants of the work is a decision, not a fact. `bears on` lists the DECISION, R, or D whose meaning or readiness depends on the fact; such a fact is a premise of the spec. Numbers in `FACT<n>` increase and are never reused; a correction is a new line that says which ID it supersedes.
 
 A role appends a fact it established or disproved and commits it, on its own when nothing else changed: the file lives in the committed spec directory, and a dirty tree stops the next role.
 

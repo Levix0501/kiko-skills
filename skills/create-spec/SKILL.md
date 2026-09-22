@@ -28,16 +28,17 @@ per [the facts file](references/facts.md). The spec goes to
 `decisions.md` holds one entry per decision:
 
 ```md
-- DECISION<n> [user] <question>
-  <answer>
+- DECISION<n> [user] <question, with the options as put>
+  <what the user chose or said>
 ```
 
 `DECISION1` is the outcome and becomes the Goal. `[user]` marks the user as
 the decider. IDs increase and are never reused; a changed decision is a new
-entry that says which ID it supersedes. A decision the user makes while
-`create-spec` runs, whether answering a returned issue or revising the
-draft, is appended the same way before it is used, worded so that question
-and answer have one reading without the conversation.
+entry that says which ID it supersedes. An entry holds what was put to the
+user and what they chose or said, nothing written for them. A decision the
+user makes while `create-spec` runs, whether answering a returned issue or
+revising the draft, is appended the same way before it is used, worded so
+that question and answer have one reading without the conversation.
 
 Apply [the spec rules](references/spec-rules.md) to each entry. Run each
 empirical premise through the evidence gate in the spec rules before using
