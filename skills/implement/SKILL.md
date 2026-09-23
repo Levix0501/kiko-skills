@@ -1,6 +1,7 @@
 ---
 name: implement
-description: Turn a spec into reviewed, shippable code. Use when the user asks to build a spec.
+description: Turn a spec into reviewed, shippable code. Use when the user asks to implement a spec.
+disable-model-invocation: true
 ---
 
 Orchestrate implementation from a spec: the controller dispatches fresh roles (subagents) to implement and review. The controller never implements, reviews, or fixes anything itself.
