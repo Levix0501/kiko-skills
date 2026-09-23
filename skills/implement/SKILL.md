@@ -138,7 +138,7 @@ When the subagent returns, continue to Step 6.
 
 - `Status: clean` → Step 13.
 - `Status: issues` without `Fix` → spec issue: Step 10; external blocker: Step 11.
-- `Fix: DONE` whose fixes changed no behavior → Step 13. The fixes changed no behavior when, for every repository the result lists, the bundled `scripts/check-text-only` with the repository path, the `Head` its `Prior result` records for it (its `Base` when the prior result does not list it), and its `Head` exits 0.
+- `Fix: DONE` whose fixes changed no behavior → Step 13. The fixes changed no behavior when the [behavior check](#27-behavior-check) returns `UNCHANGED` for every repository the result lists, from the `Head` its `Prior result` records for it (its `Base` when the prior result does not list it) to its `Head`.
 - Any other `Fix: DONE` → Step 8, so a fresh reviewer verifies the fixes; when this is the third or a later `Fix: DONE` result since the latest `Implementation result` or `Spec amendment` record, read and follow [references/finding-gate.md](references/finding-gate.md) instead.
 - `Fix: BLOCKED` → spec issue: Step 10; external blocker: Step 11; otherwise Step 12.
 
@@ -265,3 +265,16 @@ One exception. A successor after a spec issue or an external blocker whose role 
 ### 2.6 Results
 
 Results are cumulative: a role reads only its `Prior result`, and the controller takes repository state from the latest adopted result. Every result carries forward the repository blocks of its `Prior result` — every repository on the work branch, with `Base` the commit the branch was created from, `Created from` where recorded, and `Head` updated to the current commit — and adds any repository this dispatch first touched. A review result also carries forward the findings its `Prior result` lists. Everything else in a result is that dispatch's own report.
+
+### 2.7 Behavior check
+
+Dispatch a fresh subagent with exactly this prompt, one line per repository:
+
+```text
+Read the diff of each repository below between its two commits, excluding `.kiko/`, and change nothing:
+<repository-path> <from-sha> <to-sha>
+
+Decide whether any change can make something that runs behave differently: the product, or any tool the project runs on it. That depends on how the project uses the changed file; look in the repository when it decides the answer.
+
+Return only `UNCHANGED` if you established, for every change, that nothing behaves differently. Otherwise return only `CHANGED: <path:line> <reason>`, naming the first change you could not establish that for.
+```
