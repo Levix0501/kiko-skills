@@ -34,9 +34,9 @@ Show the user the outcomes in the shape `$KIKO_ROOT/TODO.md` takes:
 
 One chain per line, an arrow from an outcome to what waits on it; an outcome on more than one chain appears on each of them, and an outcome on no chain stands on a line of its own.
 
-Then pick what to build next: one or more outcomes, none waiting on anything outside the pick, the most important first, as long as together they still read as one outcome, a single fresh context can build them, and another can verify them in full. Ask whether the cut and the pick suit, and nothing else alongside: the user may adjust either, and a question about the work would rest on a pick that may still change.
+Then pick what to build next: one or more outcomes, none waiting on anything outside the pick, the most important first, as long as together they still read as one outcome, a single fresh context can build them, and another can verify them in full. Show the pick with who it serves, what changes, and why. Ask whether the cut and the pick suit, and nothing else alongside: the user may adjust either, and a question about the work would rest on a pick that may still change.
 
-Once the user confirms, rewrite `$KIKO_ROOT/TODO.md` as the outcomes not picked, in the same shape with the ids the user saw, and nothing else. From here on the outcome is what the user picked, and the interview covers only it.
+Once the user confirms, create the record per [references/records.md](references/records.md), and rewrite `$KIKO_ROOT/TODO.md` as the cut the user confirmed, in the same shape with the ids the user saw, and nothing else. From here on the outcome is what the user picked, and the interview covers only it.
 
 ## Interview
 
@@ -46,7 +46,7 @@ The frontier is every unsettled decision whose prerequisites are all settled. Tw
 
 Ask the user only for decisions and for facts only they can provide. A choice the implementer may not replace is a decision, whoever proposed it. Every other fact is a prerequisite you settle yourself from the environment, even one the user stated: what they say about the environment may never have been measured, and a false premise found now costs a question, found in implementation costs the build. A check that contradicts the user is a decision to put to them. While a lookup is running, its dependents stay out of the frontier.
 
-Each round is one call of the harness's structured question tool, covering as much of the frontier as its per-call limit allows, starting with the questions that unblock the most. Without such a tool, ask in the reply with numbered options. In each question, put the recommended option first with its main reason and cost. Wait for the answers, update the tree, recompute the frontier, and ask the next round.
+Each round is one call of the harness's structured question tool, covering as much of the frontier as its per-call limit allows, starting with the questions that unblock the most. Without such a tool, ask in the reply with numbered options. In each question, put the recommended option first with its main reason and cost. Wait for the answers, record them and any new facts per [references/records.md](references/records.md), update the tree, recompute the frontier, and ask the next round.
 
 The interview ends when the frontier is empty: every decision is settled and nothing is left silently assumed. Do not act on the result until the user confirms the summary.
 
@@ -71,9 +71,9 @@ Recommend a spec when the work involves irreversible changes, migration, securit
 
 Recommend direct implementation when the work is local, reversible, can be completed in the current session, and the summary is a sufficient requirements record. Do not decide based on size or file count alone.
 
-Selecting either option confirms the summary.
+Selecting either option confirms the summary. Once it is confirmed, commit the record per [references/records.md](references/records.md#commit), then rewrite `$KIKO_ROOT/TODO.md` as the outcomes not picked, in the same shape with the ids the user saw, and nothing else.
 
-If the user selects `create a spec` and the `create-spec` skill is unavailable, tell the user that it is not installed and cannot be invoked; do not silently substitute another spec-writing flow. Otherwise read and follow [references/records.md](references/records.md): it records the decisions and facts, then invokes `create-spec`.
+If the user selects `create a spec` and the `create-spec` skill is unavailable, tell the user that it is not installed and cannot be invoked; do not silently substitute another spec-writing flow. Otherwise invoke `create-spec` with the record's directory.
 
 If the user selects `start implementing directly`, begin implementation immediately in the current context, using the confirmed summary as the requirements record.
 

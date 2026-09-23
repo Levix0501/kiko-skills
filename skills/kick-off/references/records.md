@@ -2,7 +2,8 @@
 
 Set `SLUG` to `YYYY-MM-DD-<topic>`: today's date and a kebab-case topic
 taken from the outcome. Pick another topic if `$KIKO_ROOT/docs/$SLUG`
-exists. Create the directory.
+exists. Create the directory with `decisions.md` holding `DECISION1` and
+`facts.md` holding its heading.
 
 ## decisions.md
 
@@ -13,8 +14,8 @@ changed decision is a new entry that says which ID it supersedes.
 ```md
 # Decisions — <slug>
 
-- DECISION1 [user] Outcome
-  <who, what changes, why>
+- DECISION1 [user] Outcome: <the pick as shown>
+  <what the user said>
 - DECISION<n> [user] <question, with the options as put>
   <what the user chose or said>
 ```
@@ -28,7 +29,8 @@ too; a choice they leave open is an entry whose answer says so. Question
 and answer together have one reading for someone with no conversation
 history.
 
-Write one entry per settled decision.
+Append each entry when the act happens: a round's answers before the next
+round is asked, the user's own words when they say them.
 
 ## facts.md
 
@@ -50,12 +52,9 @@ in this session. A statement says no more than its source shows; what the
 user wants of the work is a decision, not a fact. State each fact concretely
 enough to be checked later.
 
-Write one line per fact.
+Append each fact when it is established.
 
-## Commit and continue
+## Commit
 
-These files transcribe the summary the user confirmed, and the spec is what
-they review next, so ask for no confirmation here.
-
-If the directory is in a Git working tree, commit it and report the SHA.
-Then invoke the `create-spec` skill with `$KIKO_ROOT/docs/$SLUG`.
+Everything here was shown to the user, so ask for no confirmation. If the
+directory is in a Git working tree, commit it and report the SHA.
