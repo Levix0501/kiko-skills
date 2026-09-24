@@ -52,7 +52,7 @@ The interview ends when the frontier is empty: every decision is settled and not
 
 ## Summary
 
-When the frontier is empty, present a concise summary of what was settled:
+When the frontier is empty, present a concise summary of the record:
 
 - the outcome and its boundaries
 - the requirements and decisions the work must honor, each as the user settled it
